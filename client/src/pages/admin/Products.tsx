@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useUserStore } from '../../stores/useUserStore';
 import { useNavigate } from 'react-router-dom';
@@ -43,6 +44,7 @@ export default function AdminProducts() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-semibold text-gray-800">Products</h1>
+        <Link to="/admin/products/new" className="bg-brand-brown text-brand-cream px-4 py-2 text-sm font-semibold hover:bg-brand-brown-dark">Add Product</Link>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -71,6 +73,7 @@ export default function AdminProducts() {
                 <td className="py-3 px-4 text-gray-800">{formatPrice(product.price)}</td>
                 <td className="py-3 px-4 text-gray-800">{product.stock}</td>
                 <td className="py-3 px-4">
+                  <Link to={`/admin/products/${product._id}/edit`} className="text-brand-brown hover:underline text-sm mr-3">Edit</Link>
                   <button onClick={() => handleDelete(product._id)} className="text-red-500 hover:underline text-sm">
                     Delete
                   </button>

@@ -10,7 +10,7 @@ export function validate(schema: ZodSchema) {
       if (error instanceof ZodError) {
         res.status(400).json({
           success: false,
-          error: error.errors.map(e => e.message).join(', '),
+          error: error.issues.map((e: any) => e.message).join(', '),
         });
       } else {
         next(error);

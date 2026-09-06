@@ -10,6 +10,7 @@ import cartRoutes from './routes/cart';
 import orderRoutes from './routes/orders';
 import webhookRoutes from './routes/webhooks';
 import adminRoutes from './routes/admin';
+import uploadRoutes from './routes/upload';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ success: true, data: { status: 'ok' } });

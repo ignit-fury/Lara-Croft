@@ -13,7 +13,7 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
       filter.$text = { $search: search as string };
     }
     if (category) {
-      const cat = await Category.findOne({ slug: category });
+      const cat = await Category.findOne({ slug: category as string });
       if (cat) filter.category = cat._id;
     }
     if (minPrice || maxPrice) {

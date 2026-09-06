@@ -14,6 +14,7 @@ import Dashboard from './pages/admin/Dashboard';
 import AdminOrders from './pages/admin/Orders';
 import AdminProducts from './pages/admin/Products';
 import AdminUsers from './pages/admin/Users';
+import ProductEdit from './pages/admin/ProductEdit';
 import { useAuth } from './hooks/useAuth';
 import { useCartStore } from './stores/useCartStore';
 import { useUserStore } from './stores/useUserStore';
@@ -51,6 +52,8 @@ function App() {
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
           <Route path="/admin/products" element={<AdminProducts />} />
+          <Route path="/admin/products/new" element={<ProductEdit />} />
+          <Route path="/admin/products/:id/edit" element={<ProductEdit />} />
           <Route path="/admin/users" element={<AdminUsers />} />
         </Route>
       </Routes>
