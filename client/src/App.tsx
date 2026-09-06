@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/layout/Layout';
+import AdminRoute from './components/auth/AdminRoute';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import Home from './pages/Home';
 import ProductDetail from './pages/ProductDetail';
 import CategoryPage from './pages/CategoryPage';
@@ -39,14 +41,18 @@ function App() {
           <Route path="/product/:slug" element={<ProductDetail />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/checkout/success" element={<CheckoutSuccess />} />
-          <Route path="/account" element={<Account />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/checkout/success" element={<CheckoutSuccess />} />
+            <Route path="/account" element={<Account />} />
+          </Route>
         </Route>
-        <Route path="/admin" element={<Dashboard />} />
-        <Route path="/admin/orders" element={<AdminOrders />} />
-        <Route path="/admin/products" element={<AdminProducts />} />
-        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<Dashboard />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
+          <Route path="/admin/products" element={<AdminProducts />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
