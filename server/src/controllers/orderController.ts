@@ -82,6 +82,20 @@ export async function confirmOrder(req: AuthRequest, res: Response): Promise<voi
     order.razorpayPaymentId = razorpay_payment_id;
     await order.save();
 
+    const User = (await import('../models/User')).default;
+    const userDoc = await User.findById(req.userId);
+    if (userDoc) {
+      const { sendOrderConfirmation } = await import('../services/emailService');
+      sendOrderConfirmation({
+        to: userDoc.email,
+        customerName: userDoc.name,
+        orderId: (order._id as any).toString(),
+        items: order.items.map((i: any) => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price })),
+        total: order.total,
+        shippingAddress: order.shippingAddress,
+      });
+    }
+
     await Cart.findOneAndUpdate({ user: req.userId }, { items: [] });
 
     res.json({ success: true, data: order });

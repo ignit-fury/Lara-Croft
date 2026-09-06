@@ -12,6 +12,10 @@ const envSchema = z.object({
   RAZORPAY_KEY_SECRET: z.string().min(1),
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);
