@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db';
+import authRoutes from './routes/auth';
 
 dotenv.config();
 
@@ -14,6 +15,8 @@ app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(morgan('dev'));
 app.use(express.json());
+
+app.use('/api/auth', authRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ success: true, data: { status: 'ok' } });
