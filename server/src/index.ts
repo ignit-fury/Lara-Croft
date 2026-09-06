@@ -8,6 +8,7 @@ import authRoutes from './routes/auth';
 import productRoutes from './routes/products';
 import cartRoutes from './routes/cart';
 import orderRoutes from './routes/orders';
+import webhookRoutes from './routes/webhooks';
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ const PORT = process.env.PORT || 3001;
 app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(morgan('dev'));
+app.use('/api/webhooks', webhookRoutes);
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
