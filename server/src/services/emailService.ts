@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend';
 import { env } from '../config/env';
 
 interface OrderEmailData {
@@ -19,15 +19,16 @@ interface OrderEmailData {
   };
 }
 
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: env.SMTP_USER,
-    pass: env.SMTP_PASS,
-  },
-});
+const mailerSend = env.MAILERSEND_API_KEY
+  ? new MailerSend({ apiKey: env.MAILERSEND_API_KEY })
+  : null;
+
+function parseSender(raw: string | undefined): { email: string; name: string } {
+  if (!raw) return { email: '', name: 'LARA CROFT' };
+  const match = raw.match(/^(.*)<([^<>]+)>$/);
+  if (match) return { name: match[1].trim() || 'LARA CROFT', email: match[2].trim() };
+  return { email: raw.trim(), name: 'LARA CROFT' };
+}
 
 function formatPrice(paise: number): string {
   return `\u20B9${(paise / 100).toLocaleString('en-IN')}`;
@@ -153,21 +154,30 @@ function buildOrderEmailHtml(data: OrderEmailData): string {
 }
 
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {
-  if (!env.SMTP_USER || !env.SMTP_PASS) {
-    console.log('[EMAIL] SMTP credentials not configured, skipping email');
+  if (!mailerSend) {
+    console.log('[EMAIL] MAILERSEND_API_KEY not configured, skipping email');
+    return;
+  }
+
+  const from = parseSender(env.MAILERSEND_FROM || env.SMTP_FROM);
+  if (!from.email) {
+    console.log('[EMAIL] No sender address configured (MAILERSEND_FROM), skipping email');
     return;
   }
 
   try {
     const invoiceNo = `INV-${data.orderId.slice(-8).toUpperCase()}`;
-    await transporter.sendMail({
-      from: env.SMTP_FROM || `LARA CROFT <${env.SMTP_USER}>`,
-      to: data.to,
-      subject: `Order Confirmed #${data.orderId} — Invoice ${invoiceNo}`,
-      html: buildOrderEmailHtml(data),
-    });
-    console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to}`);
+    const html = buildOrderEmailHtml(data);
+    const emailParams = new EmailParams()
+      .setFrom(new Sender(from.email, from.name))
+      .setTo([new Recipient(data.to, data.customerName)])
+      .setSubject(`Order Confirmed #${data.orderId} — Invoice ${invoiceNo}`)
+      .setHtml(html)
+      .setText(`Hi ${data.customerName}, your LARA CROFT order #${data.orderId} (${invoiceNo}) is confirmed. Total: ${formatPrice(data.total)}.`);
+    await mailerSend.email.send(emailParams);
+    console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via MailerSend`);
   } catch (error) {
-    console.error('[EMAIL] Failed to send:', error);
+    console.error('[EMAIL] Failed to send via MailerSend:', error);
+    throw error;
   }
 }
