@@ -18,6 +18,7 @@ import adminRoutes from './routes/admin';
 import uploadRoutes from './routes/upload';
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Security headers
 app.use(helmet({
