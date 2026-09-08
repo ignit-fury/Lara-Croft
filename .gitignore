@@ -2,6 +2,8 @@ node_modules/
 dist/
 .env
 .env.local
+client_secret*.json
+*googleusercontent*.json
 *.log
 .superpowers/
 /Croft
