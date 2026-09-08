@@ -29,15 +29,24 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://*.supabase.co"],
+      connectSrc: ["'self'", "https://*.supabase.co", "https://*.onrender.com", "https://*.vercel.app"],
     },
   },
   crossOriginEmbedderPolicy: false,
 }));
 
 // CORS
+const frontendUrl = (env.FRONTEND_URL || '').replace(/\/+$/, '');
 app.use(cors({
-  origin: env.FRONTEND_URL,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const normalized = origin.replace(/\/+$/, '');
+    if (normalized === frontendUrl || normalized.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
