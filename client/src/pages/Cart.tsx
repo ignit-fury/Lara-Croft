@@ -20,10 +20,6 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
     if (user && open) fetchCart();
   }, [user, open, fetchCart]);
 
-  const handleCheckout = () => {
-    onClose();
-  };
-
   return (
     <>
       {open && <div className="fixed inset-0 bg-black/60 z-[190]" onClick={onClose} />}

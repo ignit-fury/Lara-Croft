@@ -6,11 +6,11 @@ export function validate(schema: ZodSchema) {
     try {
       schema.parse(req.body);
       next();
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ZodError) {
         res.status(400).json({
           success: false,
-          error: error.issues.map((e: any) => e.message).join(', '),
+          error: error.issues.map((e) => e.message).join(', '),
         });
       } else {
         next(error);

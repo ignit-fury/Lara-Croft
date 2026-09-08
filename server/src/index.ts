@@ -67,7 +67,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Health check — includes DB ping for UptimeRobot
-app.get('/api/health', async (_req, res) => {
+app.get('/api/health', async (_req: express.Request, res: express.Response) => {
   try {
     const { supabase } = await import('./db/supabase-db');
     const { error } = await supabase.from('users').select('id').limit(1);

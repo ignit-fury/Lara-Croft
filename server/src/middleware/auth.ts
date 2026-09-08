@@ -1,12 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { createRemoteJWKSet, jwtVerify, JWTPayload } from 'jose';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { env } from '../config/env';
 import { findOne, findById } from '../db/supabase-db';
 
 export interface AuthRequest extends Request {
   userId?: string;
   user?: any;
+  body: any;
+  params: any;
+  query: any;
+  headers: any;
+  file?: Express.Multer.File;
 }
 
 // Lazy-init JWKS client for Supabase ES256 verification

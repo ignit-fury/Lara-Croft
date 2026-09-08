@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useUserStore } from '../stores/useUserStore';
 import type { Order } from '../types';
-import toast from 'react-hot-toast';
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
@@ -11,6 +10,7 @@ function formatPrice(paise: number): string {
 
 export default function Account() {
   const { user } = useUserStore();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'orders' | 'profile'>('orders');

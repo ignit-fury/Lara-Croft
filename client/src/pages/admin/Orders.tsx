@@ -9,10 +9,6 @@ function formatPrice(paise: number): string {
 }
 
 const STATUS_LIST = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
-const STATUS_COLOR: Record<string, string> = {
-  pending: '#8a6d3f', confirmed: '#6f7a3f', processing: '#7a5a2f',
-  shipped: '#6f4423', delivered: '#4c5a2e', cancelled: '#8a3f3f',
-};
 const PAY_COLOR: Record<string, string> = {
   paid: '#4c5a2e', pending: '#8a6d3f', failed: '#8a3f3f',
 };
