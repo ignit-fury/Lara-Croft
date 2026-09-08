@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import express from 'express';
 import { env } from '../config/env';
-import Order from '../models/Order';
+import { findOne, updateOne } from '../db/supabase-db';
 import crypto from 'crypto';
 
 const router = Router();
@@ -33,38 +33,45 @@ router.post('/razorpay', express.raw({ type: 'application/json' }), async (req: 
     return;
   }
 
-  switch (event.event) {
-    case 'payment.captured': {
-      const payment = event.payload.payment.entity;
-      const order = await Order.findOne({ razorpayOrderId: payment.order_id });
-      if (order) {
-        order.paymentStatus = 'paid';
-        order.status = 'confirmed';
-        order.razorpayPaymentId = payment.id;
-        await order.save();
+  try {
+    switch (event.event) {
+      case 'payment.captured': {
+        const payment = event.payload.payment.entity;
+        const order = await findOne('orders', { razorpay_order_id: payment.order_id });
+        if (order) {
+          await updateOne('orders', order.id, {
+            payment_status: 'paid',
+            status: 'confirmed',
+            razorpay_payment_id: payment.id,
+          });
+        }
+        break;
       }
-      break;
-    }
-    case 'payment.failed': {
-      const payment = event.payload.payment.entity;
-      const order = await Order.findOne({ razorpayOrderId: payment.order_id });
-      if (order) {
-        order.paymentStatus = 'failed';
-        order.status = 'cancelled';
-        await order.save();
+      case 'payment.failed': {
+        const payment = event.payload.payment.entity;
+        const order = await findOne('orders', { razorpay_order_id: payment.order_id });
+        if (order) {
+          await updateOne('orders', order.id, {
+            payment_status: 'failed',
+            status: 'cancelled',
+          });
+        }
+        break;
       }
-      break;
-    }
-    case 'refund.created': {
-      const refund = event.payload.refund.entity;
-      const order = await Order.findOne({ razorpayPaymentId: refund.payment_id });
-      if (order) {
-        order.paymentStatus = 'refunded';
-        order.status = 'refunded';
-        await order.save();
+      case 'refund.created': {
+        const refund = event.payload.refund.entity;
+        const order = await findOne('orders', { razorpay_payment_id: refund.payment_id });
+        if (order) {
+          await updateOne('orders', order.id, {
+            payment_status: 'refunded',
+            status: 'refunded',
+          });
+        }
+        break;
       }
-      break;
     }
+  } catch (error) {
+    console.error('Webhook processing error:', error);
   }
 
   res.json({ success: true });

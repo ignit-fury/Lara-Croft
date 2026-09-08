@@ -1,52 +1,56 @@
 import { Request, Response } from 'express';
-import Product from '../models/Product';
-import Category from '../models/Category';
-import { AuthRequest } from '../middleware/auth';
+import { supabase, findOne } from '../db/supabase-db';
+import { normalize } from '../db/normalize';
 
 export async function getProducts(req: Request, res: Response): Promise<void> {
   try {
-    const { search, category, minPrice, maxPrice, size, sort, page = '1', limit = '12' } = req.query;
-    
-    const filter: any = {};
-    
-    if (search) {
-      filter.$text = { $search: search as string };
-    }
-    if (category) {
-      const cat = await Category.findOne({ slug: category as string });
-      if (cat) filter.category = cat._id;
-    }
-    if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) filter.price.$gte = Number(minPrice);
-      if (maxPrice) filter.price.$lte = Number(maxPrice);
-    }
-    if (size) {
-      filter.sizes = { $in: (size as string).split(',') };
-    }
+    const { search, category, minPrice, maxPrice, size, sort, onSale, page = '1', limit = '12' } = req.query;
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
-    const skip = (pageNum - 1) * limitNum;
+    const from = (pageNum - 1) * limitNum;
+    const to = from + limitNum - 1;
 
-    let sortOption: any = { createdAt: -1 };
-    if (sort === 'price_asc') sortOption = { price: 1 };
-    else if (sort === 'price_desc') sortOption = { price: -1 };
-    else if (sort === 'name') sortOption = { name: 1 };
+    let query = supabase
+      .from('products')
+      .select('*, categories!inner(id, name, slug)', { count: 'exact' });
 
-    const [products, total] = await Promise.all([
-      Product.find(filter).sort(sortOption).skip(skip).limit(limitNum).populate('category'),
-      Product.countDocuments(filter),
-    ]);
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+    if (category) {
+      const cat = await findOne('categories', { slug: category as string });
+      if (cat) query = query.eq('category_id', cat.id);
+    }
+    if (minPrice) query = query.gte('price', Number(minPrice));
+    if (maxPrice) query = query.lte('price', Number(maxPrice));
+    if (size) {
+      const sizes = (size as string).split(',');
+      query = query.overlaps('sizes', sizes);
+    }
+
+    if (onSale === 'true') {
+      query = query.filter('original_price', 'gt', 'price');
+    }
+
+    if (sort === 'price_asc') query = query.order('price', { ascending: true });
+    else if (sort === 'price_desc') query = query.order('price', { ascending: false });
+    else if (sort === 'name') query = query.order('name', { ascending: true });
+    else query = query.order('created_at', { ascending: false });
+
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
+    if (error) throw error;
 
     res.json({
       success: true,
-      data: products,
+      data: normalize(data) || [],
       pagination: {
         page: pageNum,
         limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum),
+        total: count || 0,
+        pages: Math.ceil((count || 0) / limitNum),
       },
     });
   } catch (error: any) {
@@ -56,12 +60,17 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
 
 export async function getProductBySlug(req: Request, res: Response): Promise<void> {
   try {
-    const product = await Product.findOne({ slug: req.params.slug }).populate('category');
-    if (!product) {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, categories!inner(id, name, slug)')
+      .eq('slug', req.params.slug as string)
+      .single();
+
+    if (error || !data) {
       res.status(404).json({ success: false, error: 'Product not found' });
       return;
     }
-    res.json({ success: true, data: product });
+    res.json({ success: true, data: normalize(data) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -69,17 +78,30 @@ export async function getProductBySlug(req: Request, res: Response): Promise<voi
 
 export async function getFeaturedProducts(req: Request, res: Response): Promise<void> {
   try {
-    const products = await Product.find({ featured: true }).limit(8).populate('category');
-    res.json({ success: true, data: products });
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, categories!inner(id, name, slug)')
+      .eq('featured', true)
+      .order('created_at', { ascending: false })
+      .limit(8);
+
+    if (error) throw error;
+    res.json({ success: true, data: normalize(data) || [] });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
 }
 
-export async function getCategories(req: Request, res: Response): Promise<void> {
+export async function getCategories(_req: Request, res: Response): Promise<void> {
   try {
-    const categories = await Category.find({ active: true }).sort({ order: 1 });
-    res.json({ success: true, data: categories });
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('active', true)
+      .order('order_num', { ascending: true });
+
+    if (error) throw error;
+    res.json({ success: true, data: normalize(data) || [] });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

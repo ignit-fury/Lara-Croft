@@ -19,13 +19,13 @@ export default function CategoryPage() {
   }, [slug, sortBy]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-[1400px] mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold text-gray-800 capitalize">{slug?.replace('-', ' ')}</h1>
+        <h1 className="text-[28px] font-extrabold text-brand-text uppercase tracking-wide">{slug?.replace('-', ' ')}</h1>
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className="border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-brand-brown rounded-none"
+          className="border border-brand-border bg-brand-card text-brand-muted px-4 py-2.5 text-[13px] font-semibold focus:outline-none focus:border-brand-accent appearance-none cursor-pointer"
         >
           <option value="newest">Newest</option>
           <option value="price_asc">Price: Low to High</option>
@@ -33,7 +33,7 @@ export default function CategoryPage() {
         </select>
       </div>
       {loading ? (
-        <div className="text-center text-gray-500 py-12">Loading...</div>
+        <div className="text-center text-brand-muted py-16 text-[14px]">Loading...</div>
       ) : (
         <ProductGrid products={products} />
       )}

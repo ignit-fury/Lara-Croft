@@ -1,78 +1,94 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useUserStore } from '../../stores/useUserStore';
 import { useCartStore } from '../../stores/useCartStore';
 import { useAuth } from '../../hooks/useAuth';
+import { useState } from 'react';
+import CartDrawer from '../../pages/Cart';
 
 export default function Header() {
   const { user } = useUserStore();
   const { items } = useCartStore();
-  const { signInWithGoogle, signOut } = useAuth();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-brand-brown font-bold text-xl tracking-tight">PRIMA FACIE</span>
-            <span className="text-brand-brown text-xs font-medium tracking-widest uppercase">LARA CROFT</span>
+    <>
+      {/* Announcement Bar */}
+      <div className="text-brand-cream text-center py-2 px-4 text-[13px] font-medium tracking-wide"
+        style={{ background: 'linear-gradient(90deg, #6f4423 0%, #8a5a30 50%, #6f4423 100%)', backgroundSize: '200% 100%', animation: 'shimmer 4s ease-in-out infinite' }}>
+        Free Shipping on Orders Over ₹1,000 &nbsp;·&nbsp; Use Code <strong>LARA25</strong> for 25% Off
+      </div>
+      <style>{`@keyframes shimmer { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }`}</style>
+
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-brand-border" style={{ background: 'rgba(255,255,255,.92)', backdropFilter: 'blur(14px)' }}>
+        <div className="max-w-[1400px] mx-auto px-6 py-3.5 flex items-center justify-between gap-6">
+          <Link to="/" className="text-[22px] font-black tracking-[3px] uppercase text-brand-text no-nowrap">
+            LARA<span className="text-brand-accent">CROFT</span>
           </Link>
 
-          {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link to="/category/lehengas" className="text-gray-600 hover:text-brand-brown text-sm font-medium transition-colors">
-              Lehengas
-            </Link>
-            <Link to="/category/sarees" className="text-gray-600 hover:text-brand-brown text-sm font-medium transition-colors">
-              Sarees
-            </Link>
-            <Link to="/category/suits-salwar" className="text-gray-600 hover:text-brand-brown text-sm font-medium transition-colors">
-              Suits
-            </Link>
-            <Link to="/category/western-wear" className="text-gray-600 hover:text-brand-brown text-sm font-medium transition-colors">
-              Western
-            </Link>
-            <Link to="/category/jewellery" className="text-gray-600 hover:text-brand-brown text-sm font-medium transition-colors">
-              Jewellery
-            </Link>
+            <Link to="/" className="text-brand-muted text-[13px] font-medium uppercase tracking-[1px] hover:text-brand-text transition-colors">Shop</Link>
+            <Link to="/collection" className="text-brand-muted text-[13px] font-medium uppercase tracking-[1px] hover:text-brand-text transition-colors">Collection</Link>
+            <Link to="/sale" className="text-brand-muted text-[13px] font-medium uppercase tracking-[1px] hover:text-brand-text transition-colors">Sale</Link>
+            <Link to="/about" className="text-brand-muted text-[13px] font-medium uppercase tracking-[1px] hover:text-brand-text transition-colors">About</Link>
           </nav>
 
-          {/* Actions */}
           <div className="flex items-center gap-4">
-            <Link to="/cart" className="relative text-gray-600 hover:text-brand-brown">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
+            <button onClick={() => setCartOpen(true)} className="relative text-brand-muted hover:text-brand-text transition-colors text-lg">
+              🛒
               {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-brand-brown text-brand-cream text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 bg-brand-accent text-brand-cream text-[10px] font-bold w-[18px] h-[18px] rounded-full flex items-center justify-center">
                   {itemCount}
                 </span>
               )}
-            </Link>
+            </button>
 
             {user ? (
-              <div className="flex items-center gap-3">
-                <Link to="/account" className="text-sm text-gray-600 hover:text-brand-brown">
-                  {user.name}
+              <div className="hidden md:flex items-center gap-3">
+                <Link to="/account" className="text-brand-muted text-sm hover:text-brand-text transition-colors">
+                  👤 {user.name}
                 </Link>
-                {user.role === 'admin' && (
-                  <Link to="/admin" className="text-sm text-brand-brown hover:text-brand-brown-dark font-medium">
-                    Admin
-                  </Link>
+                {(user.role === 'admin' || user.role === 'manager' || user.role === 'super_admin') && (
+                  <Link to="/admin" className="text-brand-accent text-sm font-semibold hover:text-brand-accent2 transition-colors">Admin</Link>
                 )}
-                <button onClick={signOut} className="text-sm text-gray-500 hover:text-gray-700">
-                  Sign Out
-                </button>
+                <button onClick={signOut} className="text-brand-muted text-sm hover:text-brand-text transition-colors">Sign Out</button>
               </div>
             ) : (
-              <button onClick={signInWithGoogle} className="bg-brand-brown text-brand-cream px-4 py-2 text-sm font-medium hover:bg-brand-brown-dark transition-colors">
+              <button onClick={() => navigate('/login')} className="hidden md:block bg-brand-accent text-brand-cream px-5 py-2 text-[13px] font-bold uppercase tracking-[1px] hover:bg-brand-accent2 transition-colors">
                 Sign In
               </button>
             )}
+
+            <button onClick={() => setMobileOpen(true)} className="md:hidden text-brand-text text-2xl p-1">☰</button>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Mobile Menu */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[99] flex flex-col items-center justify-center gap-8" style={{ background: 'rgba(255,255,255,.97)' }}>
+          <button onClick={() => setMobileOpen(false)} className="absolute top-5 right-5 text-brand-text text-2xl p-1">✕</button>
+          <Link to="/" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Shop</Link>
+          <Link to="/collection" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Collection</Link>
+          <Link to="/sale" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Sale</Link>
+          <Link to="/about" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">About</Link>
+          {user ? (
+            <>
+              <Link to="/account" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px]">Account</Link>
+              <button onClick={() => { signOut(); setMobileOpen(false); }} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px]">Sign Out</button>
+            </>
+          ) : (
+            <button onClick={() => { navigate('/login'); setMobileOpen(false); }} className="bg-brand-accent text-brand-cream px-8 py-4 text-sm font-bold uppercase tracking-[2px]">Sign In</button>
+          )}
+        </div>
+      )}
+
+      {/* Cart Drawer */}
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
+    </>
   );
 }

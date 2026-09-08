@@ -1,26 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../models/Order', () => ({
-  default: {
-    create: vi.fn(),
-    find: vi.fn(),
-    findOne: vi.fn(),
-    findOneAndUpdate: vi.fn(),
-    countDocuments: vi.fn(),
+vi.mock('../db/supabase-db', () => ({
+  supabase: {
+    from: vi.fn(),
   },
-}));
-
-vi.mock('../models/Cart', () => ({
-  default: {
-    findOne: vi.fn(),
-    findOneAndUpdate: vi.fn(),
-  },
-}));
-
-vi.mock('../models/Product', () => ({
-  default: {
-    findById: vi.fn(),
-  },
+  findOne: vi.fn(),
+  insertOne: vi.fn(),
+  updateOne: vi.fn(),
 }));
 
 vi.mock('../config/razorpay', () => ({
@@ -31,9 +17,7 @@ vi.mock('../config/razorpay', () => ({
   },
 }));
 
-import Order from '../models/Order';
-import Cart from '../models/Cart';
-import Product from '../models/Product';
+import { supabase, findOne, insertOne, updateOne } from '../db/supabase-db';
 import { razorpay } from '../config/razorpay';
 
 describe('Order Controller', () => {
@@ -44,21 +28,25 @@ describe('Order Controller', () => {
   describe('createCheckoutSession', () => {
     it('should create order when cart has items', async () => {
       const mockCart = {
+        id: 'cart1',
         items: [
-          { product: { _id: '1', name: 'Test', price: 99900, images: ['img.jpg'] }, size: 'M', quantity: 1 },
+          { product_id: '1', size: 'M', quantity: 1 },
         ],
       };
-      const mockOrder = { _id: 'order1', total: 117882, razorpayOrderId: 'order_abc' };
+      const mockProduct = { id: '1', name: 'Test', price: 99900, images: ['img.jpg'] };
+      const mockOrder = { id: 'order1', total: 117882, razorpay_order_id: 'order_abc' };
       const mockRazorpayOrder = { id: 'order_abc' };
 
-      vi.mocked(Cart.findOne).mockReturnValue({
-        populate: vi.fn().mockResolvedValue(mockCart),
+      vi.mocked(findOne).mockResolvedValueOnce(mockCart as any);
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({ data: [mockProduct], error: null }),
+        }),
       } as any);
-
-      vi.mocked(Order.create).mockResolvedValue(mockOrder as any);
+      vi.mocked(insertOne).mockResolvedValue(mockOrder as any);
       vi.mocked(razorpay.orders.create).mockResolvedValue(mockRazorpayOrder as any);
 
-      const cart = await Cart.findOne({ user: 'user1' }).populate('items.product');
+      const cart = await findOne('cart', { user_id: 'user1' });
       expect(cart).toEqual(mockCart);
 
       const razorpayOrder = await razorpay.orders.create({
@@ -70,11 +58,9 @@ describe('Order Controller', () => {
     });
 
     it('should reject empty cart', async () => {
-      vi.mocked(Cart.findOne).mockReturnValue({
-        populate: vi.fn().mockResolvedValue({ items: [] }),
-      } as any);
+      vi.mocked(findOne).mockResolvedValue({ id: 'cart1', items: [] } as any);
 
-      const cart = await Cart.findOne({ user: 'user1' }).populate('items.product');
+      const cart = await findOne('cart', { user_id: 'user1' });
       expect(cart.items).toHaveLength(0);
     });
   });
@@ -82,44 +68,41 @@ describe('Order Controller', () => {
   describe('confirmOrder', () => {
     it('should update order status on valid signature', async () => {
       const mockOrder = {
-        _id: 'order1',
-        paymentStatus: 'pending',
+        id: 'order1',
+        payment_status: 'pending',
         status: 'pending',
-        save: vi.fn(),
       };
-      vi.mocked(Order.findOne).mockResolvedValue(mockOrder as any);
-      mockOrder.save.mockResolvedValue(true);
+      vi.mocked(findOne).mockResolvedValue(mockOrder as any);
+      vi.mocked(updateOne).mockResolvedValue({ ...mockOrder, payment_status: 'paid', status: 'confirmed' } as any);
 
-      const order = await Order.findOne({ razorpayOrderId: 'order_abc' });
+      const order = await findOne('orders', { razorpay_order_id: 'order_abc' });
       expect(order).toBeTruthy();
       if (order) {
-        order.paymentStatus = 'paid';
-        order.status = 'confirmed';
-        await order.save();
+        await updateOne('orders', order.id, { payment_status: 'paid', status: 'confirmed' });
       }
 
-      expect(mockOrder.paymentStatus).toBe('paid');
-      expect(mockOrder.status).toBe('confirmed');
-      expect(mockOrder.save).toHaveBeenCalled();
+      expect(updateOne).toHaveBeenCalledWith('orders', 'order1', { payment_status: 'paid', status: 'confirmed' });
     });
   });
 
   describe('getOrders', () => {
     it('should return paginated orders for user', async () => {
       const mockOrders = [
-        { _id: '1', total: 99900, status: 'confirmed' },
+        { id: '1', total: 99900, status: 'confirmed' },
       ];
-      vi.mocked(Order.find).mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-          skip: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue(mockOrders),
+
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockReturnValue({
+              range: vi.fn().mockResolvedValue({ data: mockOrders, error: null, count: 1 }),
+            }),
           }),
         }),
       } as any);
-      vi.mocked(Order.countDocuments).mockResolvedValue(1);
 
-      const orders = await Order.find({ user: 'user1' }).sort().skip().limit();
-      expect(orders).toHaveLength(1);
+      const result = await supabase.from('orders').select('*', { count: 'exact' });
+      expect(result.data).toHaveLength(1);
     });
   });
 });

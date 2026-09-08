@@ -26,16 +26,34 @@ export const useCartStore = create<CartState>((set, get) => ({
     }
   },
   addItem: async (productId, size, quantity = 1) => {
-    const res = await api.post('/cart/add', { productId, size, quantity });
-    set({ items: res.data.data.items });
+    if (get().loading) return;
+    set({ loading: true });
+    try {
+      const res = await api.post('/cart/add', { productId, size, quantity });
+      set({ items: res.data.data.items });
+    } finally {
+      set({ loading: false });
+    }
   },
   updateItem: async (productId, size, quantity) => {
-    const res = await api.put('/cart/update', { productId, size, quantity });
-    set({ items: res.data.data.items });
+    if (get().loading) return;
+    set({ loading: true });
+    try {
+      const res = await api.put('/cart/update', { productId, size, quantity });
+      set({ items: res.data.data.items });
+    } finally {
+      set({ loading: false });
+    }
   },
   removeItem: async (productId, size) => {
-    const res = await api.delete(`/cart/remove/${productId}/${size}`);
-    set({ items: res.data.data.items });
+    if (get().loading) return;
+    set({ loading: true });
+    try {
+      const res = await api.delete(`/cart/remove?productId=${encodeURIComponent(productId)}&size=${encodeURIComponent(size)}`);
+      set({ items: res.data.data.items });
+    } finally {
+      set({ loading: false });
+    }
   },
   clearCart: async () => {
     await api.delete('/cart/clear');

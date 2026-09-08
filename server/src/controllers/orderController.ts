@@ -1,31 +1,43 @@
 import { Response } from 'express';
+import crypto from 'crypto';
 import { AuthRequest } from '../middleware/auth';
-import Order from '../models/Order';
-import Cart from '../models/Cart';
-import Product from '../models/Product';
+import { supabase, findOne, insertOne, updateOne } from '../db/supabase-db';
 import { razorpay } from '../config/razorpay';
+import { normalize } from '../db/normalize';
+import { env } from '../config/env';
 
 export async function createCheckoutSession(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { shippingAddress } = req.body;
 
-    const cart = await Cart.findOne({ user: req.userId }).populate('items.product');
-    if (!cart || cart.items.length === 0) {
+    const cart = await findOne('cart', { user_id: req.userId! });
+    if (!cart || !cart.items || cart.items.length === 0) {
       res.status(400).json({ success: false, error: 'Cart is empty' });
       return;
     }
 
-    const items = cart.items.map((item: any) => ({
-      product: item.product._id,
-      name: item.product.name,
-      price: item.product.price,
-      size: item.size,
-      quantity: item.quantity,
-      image: item.product.images[0],
-    }));
+    const productIds = cart.items.map((item: any) => item.product_id);
+    const { data: products } = await supabase
+      .from('products')
+      .select('id, name, price, images')
+      .in('id', productIds);
+
+    const productMap = new Map((products || []).map((p: any) => [p.id, p]));
+
+    const items = cart.items.map((item: any) => {
+      const product = productMap.get(item.product_id);
+      return {
+        product_id: item.product_id,
+        name: product?.name || 'Unknown',
+        price: product?.price || 0,
+        size: item.size,
+        quantity: item.quantity,
+        image: product?.images?.[0] || '',
+      };
+    });
 
     const subtotal = items.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
-    const shipping = subtotal >= 5000 ? 0 : 499;
+    const shipping = subtotal >= 500000 ? 0 : 49900;
     const tax = Math.round(subtotal * 0.18);
     const totalAmount = subtotal + shipping + tax;
 
@@ -34,9 +46,10 @@ export async function createCheckoutSession(req: AuthRequest, res: Response): Pr
       currency: 'INR',
       receipt: `order_${Date.now()}`,
     });
+    console.log('[ORDER] Razorpay order created:', razorpayOrder.id, 'amount:', totalAmount);
 
-    const order = await Order.create({
-      user: req.userId,
+    const order = await insertOne('orders', {
+      user_id: req.userId,
       items,
       subtotal,
       shipping,
@@ -44,12 +57,12 @@ export async function createCheckoutSession(req: AuthRequest, res: Response): Pr
       total: totalAmount,
       currency: 'INR',
       status: 'pending',
-      paymentStatus: 'pending',
-      razorpayOrderId: razorpayOrder.id,
-      shippingAddress,
+      payment_status: 'pending',
+      razorpay_order_id: razorpayOrder.id,
+      shipping_address: shippingAddress,
     });
 
-    res.json({ success: true, data: { orderId: razorpayOrder.id, amount: totalAmount, dbOrderId: order._id } });
+    res.json({ success: true, data: { orderId: razorpayOrder.id, amount: totalAmount, dbOrderId: order.id } });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -58,47 +71,56 @@ export async function createCheckoutSession(req: AuthRequest, res: Response): Pr
 export async function confirmOrder(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    console.log('[ORDER] Confirm called:', { razorpay_order_id, razorpay_payment_id, razorpay_signature });
 
-    const crypto = await import('crypto');
-    const { env } = await import('../config/env');
     const expectedSignature = crypto
       .createHmac('sha256', env.RAZORPAY_KEY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
+
+    console.log('[ORDER] Expected sig:', expectedSignature);
+    console.log('[ORDER] Received sig:', razorpay_signature);
+    console.log('[ORDER] Match:', expectedSignature === razorpay_signature);
 
     if (expectedSignature !== razorpay_signature) {
       res.status(400).json({ success: false, error: 'Invalid payment signature' });
       return;
     }
 
-    const order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+    const order = await findOne('orders', { razorpay_order_id: razorpay_order_id });
     if (!order) {
       res.status(404).json({ success: false, error: 'Order not found' });
       return;
     }
 
-    order.paymentStatus = 'paid';
-    order.status = 'confirmed';
-    order.razorpayPaymentId = razorpay_payment_id;
-    await order.save();
+    const updatedOrder = await updateOne('orders', order.id, {
+      payment_status: 'paid',
+      status: 'confirmed',
+      razorpay_payment_id: razorpay_payment_id,
+    });
 
-    const User = (await import('../models/User')).default;
-    const userDoc = await User.findById(req.userId);
-    if (userDoc) {
+    const user = await findOne('users', { id: req.userId! });
+    if (user) {
       const { sendOrderConfirmation } = await import('../services/emailService');
       sendOrderConfirmation({
-        to: userDoc.email,
-        customerName: userDoc.name,
-        orderId: (order._id as any).toString(),
+        to: user.email,
+        customerName: user.name,
+        orderId: order.id,
         items: order.items.map((i: any) => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price })),
+        subtotal: order.subtotal,
+        shipping: order.shipping,
+        tax: order.tax,
         total: order.total,
-        shippingAddress: order.shippingAddress,
+        shippingAddress: order.shipping_address,
       });
     }
 
-    await Cart.findOneAndUpdate({ user: req.userId }, { items: [] });
+    const cart = await findOne('cart', { user_id: req.userId! });
+    if (cart) {
+      await updateOne('cart', cart.id, { items: [] });
+    }
 
-    res.json({ success: true, data: order });
+    res.json({ success: true, data: normalize(updatedOrder) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -109,21 +131,26 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<void> 
     const { page = '1', limit = '10' } = req.query;
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
-    const skip = (pageNum - 1) * limitNum;
+    const from = (pageNum - 1) * limitNum;
+    const to = from + limitNum - 1;
 
-    const [orders, total] = await Promise.all([
-      Order.find({ user: req.userId }).sort({ createdAt: -1 }).skip(skip).limit(limitNum),
-      Order.countDocuments({ user: req.userId }),
-    ]);
+    const { data, error, count } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact' })
+      .eq('user_id', req.userId!)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
 
     res.json({
       success: true,
-      data: orders,
+      data: normalize(data) || [],
       pagination: {
         page: pageNum,
         limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum),
+        total: count || 0,
+        pages: Math.ceil((count || 0) / limitNum),
       },
     });
   } catch (error: any) {
@@ -133,12 +160,18 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<void> 
 
 export async function getOrderById(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const order = await Order.findOne({ _id: req.params.id, user: req.userId });
-    if (!order) {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', req.params.id as string)
+      .eq('user_id', req.userId!)
+      .single();
+
+    if (error || !data) {
       res.status(404).json({ success: false, error: 'Order not found' });
       return;
     }
-    res.json({ success: true, data: order });
+    res.json({ success: true, data: normalize(data) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

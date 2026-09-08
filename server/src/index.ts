@@ -1,9 +1,8 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
-import { connectDB } from './config/db';
 import { env } from './config/env';
 import { apiLimiter, authLimiter, checkoutLimiter } from './middleware/rateLimiter';
 import { errorHandler, notFound } from './middleware/errorHandler';
@@ -17,8 +16,6 @@ import orderRoutes from './routes/orders';
 import webhookRoutes from './routes/webhooks';
 import adminRoutes from './routes/admin';
 import uploadRoutes from './routes/upload';
-
-dotenv.config();
 
 const app = express();
 
@@ -69,9 +66,25 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 
-// Health check
-app.get('/api/health', (_req, res) => {
-  res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString() } });
+// Health check — includes DB ping for UptimeRobot
+app.get('/api/health', async (_req, res) => {
+  try {
+    const { supabase } = await import('./db/supabase-db');
+    const { error } = await supabase.from('users').select('id').limit(1);
+    res.json({
+      success: true,
+      data: {
+        status: error ? 'degraded' : 'ok',
+        db: error ? 'error' : 'ok',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch {
+    res.json({
+      success: true,
+      data: { status: 'degraded', db: 'error', timestamp: new Date().toISOString() },
+    });
+  }
 });
 
 // Error handling
@@ -80,8 +93,6 @@ app.use(errorHandler);
 
 const PORT = env.PORT;
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

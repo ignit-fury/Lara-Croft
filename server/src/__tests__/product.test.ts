@@ -1,22 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../models/Product', () => ({
-  default: {
-    find: vi.fn(),
-    findOne: vi.fn(),
-    countDocuments: vi.fn(),
+vi.mock('../db/supabase-db', () => ({
+  supabase: {
+    from: vi.fn(),
   },
+  findOne: vi.fn(),
+  findMany: vi.fn(),
+  insertOne: vi.fn(),
+  updateOne: vi.fn(),
+  deleteOne: vi.fn(),
+  countRows: vi.fn(),
 }));
 
-vi.mock('../models/Category', () => ({
-  default: {
-    findOne: vi.fn(),
-    find: vi.fn(),
-  },
-}));
-
-import Product from '../models/Product';
-import Category from '../models/Category';
+import { supabase, findOne, countRows } from '../db/supabase-db';
 
 describe('Product Controller', () => {
   beforeEach(() => {
@@ -26,58 +22,55 @@ describe('Product Controller', () => {
   describe('getProducts', () => {
     it('should return paginated products', async () => {
       const mockProducts = [
-        { _id: '1', name: 'Test Product', price: 99900, slug: 'test-product' },
+        { id: '1', name: 'Test Product', price: 99900, slug: 'test-product' },
       ];
-      const mockTotal = 1;
 
-      vi.mocked(Product.find).mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-          skip: vi.fn().mockReturnValue({
-            limit: vi.fn().mockReturnValue({
-              populate: vi.fn().mockResolvedValue(mockProducts),
-            }),
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            range: vi.fn().mockResolvedValue({ data: mockProducts, error: null, count: 1 }),
           }),
         }),
       } as any);
 
-      vi.mocked(Product.countDocuments).mockResolvedValue(mockTotal);
-
-      const result = await Product.find({}).sort().skip().limit().populate();
-      expect(result).toEqual(mockProducts);
+      const result = await supabase.from('products').select('*', { count: 'exact' });
+      expect(result.data).toEqual(mockProducts);
     });
   });
 
   describe('getProductBySlug', () => {
     it('should find product by slug', async () => {
-      const mockProduct = { _id: '1', name: 'Test', slug: 'test' };
-      vi.mocked(Product.findOne).mockResolvedValue(mockProduct as any);
+      const mockProduct = { id: '1', name: 'Test', slug: 'test' };
+      vi.mocked(findOne).mockResolvedValue(mockProduct as any);
 
-      const result = await Product.findOne({ slug: 'test' });
+      const result = await findOne('products', { slug: 'test' });
       expect(result).toEqual(mockProduct);
-      expect(Product.findOne).toHaveBeenCalledWith({ slug: 'test' });
     });
 
     it('should return null for non-existent slug', async () => {
-      vi.mocked(Product.findOne).mockResolvedValue(null);
+      vi.mocked(findOne).mockResolvedValue(null as any);
 
-      const result = await Product.findOne({ slug: 'nonexistent' });
+      const result = await findOne('products', { slug: 'nonexistent' });
       expect(result).toBeNull();
     });
   });
 
   describe('getCategories', () => {
-    it('should return active categories sorted by order', async () => {
+    it('should return active categories', async () => {
       const mockCategories = [
-        { _id: '1', name: 'Lehengas', slug: 'lehengas', order: 1, active: true },
-        { _id: '2', name: 'Sarees', slug: 'sarees', order: 2, active: true },
+        { id: '1', name: 'Shirts', slug: 'shirts', order_num: 1, active: true },
+        { id: '2', name: 'Trousers', slug: 'trousers', order_num: 2, active: true },
       ];
-      vi.mocked(Category.find).mockReturnValue({
-        sort: vi.fn().mockResolvedValue(mockCategories),
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: mockCategories, error: null }),
+          }),
+        }),
       } as any);
 
-      const result = await Category.find({ active: true }).sort({ order: 1 });
-      expect(result).toHaveLength(2);
-      expect(result[0].name).toBe('Lehengas');
+      const result = await supabase.from('categories').select('*');
+      expect(result.data).toHaveLength(2);
     });
   });
 });

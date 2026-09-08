@@ -1,27 +1,35 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useUserStore } from '../../stores/useUserStore';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import type { Order } from '../../types';
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
 }
 
+const STATUS_LIST = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+const STATUS_COLOR: Record<string, string> = {
+  pending: '#8a6d3f', confirmed: '#6f7a3f', processing: '#7a5a2f',
+  shipped: '#6f4423', delivered: '#4c5a2e', cancelled: '#8a3f3f',
+};
+const PAY_COLOR: Record<string, string> = {
+  paid: '#4c5a2e', pending: '#8a6d3f', failed: '#8a3f3f',
+};
+
 export default function AdminOrders() {
   const { user } = useUserStore();
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
-      navigate('/');
+      navigate('/admin/login');
       return;
     }
-    const params = statusFilter ? `?status=${statusFilter}` : '';
+    const params = statusFilter !== 'all' ? `?status=${statusFilter}` : '';
     api.get(`/admin/orders${params}`).then((res) => {
       setOrders(res.data.data);
       setLoading(false);
@@ -31,74 +39,74 @@ export default function AdminOrders() {
   const handleStatusChange = async (orderId: string, status: string) => {
     try {
       await api.put(`/admin/orders/${orderId}/status`, { status });
-      setOrders(orders.map((o) => o._id === orderId ? { ...o, status: status as any } : o));
+      setOrders(orders.map((o) => o.id === orderId ? { ...o, status } : o));
       toast.success('Status updated');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to update status');
+    } catch {
+      toast.error('Failed to update status');
     }
   };
 
-  if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (loading) return <div className="text-brand-muted">Loading...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold text-gray-800">Orders</h1>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border border-gray-300 px-3 py-2 text-sm rounded-none">
-          <option value="">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="processing">Processing</option>
-          <option value="shipped">Shipped</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
+    <div className="bg-brand-card border border-brand-border">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border">
+        <div className="text-[15px] font-[700]">All orders</div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-white border border-brand-border text-brand-text px-2.5 py-[7px] text-[12.5px] font-[600] cursor-pointer"
+        >
+          <option value="all">All statuses</option>
+          {STATUS_LIST.map((s) => (
+            <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
+          ))}
         </select>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Order ID</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Customer</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Items</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Total</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Payment</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Actions</th>
+      <table className="w-full text-[13px]">
+        <thead>
+          <tr className="border-b border-brand-border">
+            <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Order</th>
+            <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Customer</th>
+            <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Items</th>
+            <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Total</th>
+            <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Payment</th>
+            <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Status</th>
+            <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.length === 0 ? (
+            <tr><td colSpan={7} className="py-12 text-center text-brand-muted text-[13px]">No orders match this filter.</td></tr>
+          ) : orders.map((order: any) => (
+            <tr key={order.id} className="border-b border-black/8 hover:bg-black/5">
+              <td className="py-3 px-5 font-[700]">{order.id.slice(-8)}</td>
+              <td className="py-3 px-5">{order.user?.name || 'N/A'}</td>
+              <td className="py-3 px-5">{order.items?.length || 0}</td>
+              <td className="py-3 px-5">{formatPrice(order.total)}</td>
+              <td className="py-3 px-5">
+                <span className="inline-block px-2.5 py-1 text-[11px] font-[700] uppercase tracking-[.5px] text-brand-cream" style={{ background: PAY_COLOR[order.paymentStatus] || '#8a6d3f' }}>
+                  {order.paymentStatus}
+                </span>
+              </td>
+              <td className="py-3 px-5">
+                <select
+                  value={order.status}
+                  onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                  className="bg-white border border-brand-border text-brand-text px-2 py-[7px] text-[12.5px] font-[600] cursor-pointer"
+                >
+                  {STATUS_LIST.map((s) => (
+                    <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
+                  ))}
+                </select>
+              </td>
+              <td className="py-3 px-5 text-brand-muted text-[12px]">
+                {new Date(order.createdAt).toLocaleDateString('en-IN')}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order._id} className="border-b border-gray-100">
-                <td className="py-3 px-4 text-gray-800 font-mono text-xs">{order._id.slice(-8)}</td>
-                <td className="py-3 px-4 text-gray-600">{(order.user as any)?.name || 'N/A'}</td>
-                <td className="py-3 px-4 text-gray-600">{order.items?.length || 0}</td>
-                <td className="py-3 px-4 text-gray-800 font-medium">{formatPrice(order.total)}</td>
-                <td className="py-3 px-4">
-                  <span className={`text-xs px-2 py-1 ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : order.paymentStatus === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {order.paymentStatus}
-                  </span>
-                </td>
-                <td className="py-3 px-4">
-                  <span className={`text-xs px-2 py-1 ${order.status === 'delivered' ? 'bg-green-100 text-green-700' : order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {order.status}
-                  </span>
-                </td>
-                <td className="py-3 px-4">
-                  <select value={order.status} onChange={(e) => handleStatusChange(order._id, e.target.value)} className="border border-gray-300 px-2 py-1 text-xs rounded-none">
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="processing">Processing</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

@@ -1,13 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('../models/User', () => ({
-  default: {
-    findOne: vi.fn(),
-  },
+vi.mock('../db/supabase-db', () => ({
+  findOne: vi.fn(),
 }));
 
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
+import { findOne } from '../db/supabase-db';
 
 describe('Auth Middleware', () => {
   it('should verify valid JWT token', () => {
@@ -29,12 +27,12 @@ describe('Auth Middleware', () => {
     }).toThrow();
   });
 
-  it('should find user by supabaseId', async () => {
-    const mockUser = { _id: 'mongo1', supabaseId: 'user123', role: 'user' };
-    vi.mocked(User.findOne).mockResolvedValue(mockUser as any);
+  it('should find user by supabase_id', async () => {
+    const mockUser = { id: 'uuid1', supabase_id: 'user123', role: 'user' };
+    vi.mocked(findOne).mockResolvedValue(mockUser as any);
 
-    const user = await User.findOne({ supabaseId: 'user123' });
+    const user = await findOne('users', { supabase_id: 'user123' });
     expect(user).toBeTruthy();
-    expect(user?.supabaseId).toBe('user123');
+    expect(user?.supabase_id).toBe('user123');
   });
 });

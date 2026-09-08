@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useUserStore } from '../../stores/useUserStore';
-import { useNavigate } from 'react-router-dom';
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
 }
+
+const STATUS_LIST = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+const STATUS_COLOR: Record<string, string> = {
+  pending: '#8a6d3f', confirmed: '#6f7a3f', processing: '#7a5a2f',
+  shipped: '#6f4423', delivered: '#4c5a2e', cancelled: '#8a3f3f',
+};
+const PAY_COLOR: Record<string, string> = {
+  paid: '#4c5a2e', pending: '#8a6d3f', failed: '#8a3f3f',
+};
 
 interface DashboardStats {
   totalOrders: number;
@@ -20,79 +29,89 @@ export default function Dashboard() {
   const { user } = useUserStore();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
-      navigate('/');
+      navigate('/admin/login');
       return;
     }
-    api.get('/admin/dashboard').then((res) => {
-      setStats(res.data.data);
-      setLoading(false);
-    });
+    api.get('/admin/dashboard').then((res) => setStats(res.data.data));
   }, [user, navigate]);
 
-  if (loading || !stats) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (!stats) return <div className="text-brand-muted">Loading...</div>;
+
+  const statusCounts: Record<string, number> = {};
+  STATUS_LIST.forEach((s) => (statusCounts[s] = 0));
+  stats.ordersByStatus.forEach((s) => (statusCounts[s._id] = s.count));
+  const maxCount = Math.max(...Object.values(statusCounts), 1);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-8">Admin Dashboard</h1>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="p-6 bg-gray-50 border border-gray-200">
-          <p className="text-sm text-gray-500">Total Orders</p>
-          <p className="text-2xl font-bold text-gray-800">{stats.totalOrders}</p>
-        </div>
-        <div className="p-6 bg-gray-50 border border-gray-200">
-          <p className="text-sm text-gray-500">Total Revenue</p>
-          <p className="text-2xl font-bold text-brand-brown">{formatPrice(stats.totalRevenue)}</p>
-        </div>
-        <div className="p-6 bg-gray-50 border border-gray-200">
-          <p className="text-sm text-gray-500">Total Users</p>
-          <p className="text-2xl font-bold text-gray-800">{stats.totalUsers}</p>
-        </div>
-        <div className="p-6 bg-gray-50 border border-gray-200">
-          <p className="text-sm text-gray-500">Total Products</p>
-          <p className="text-2xl font-bold text-gray-800">{stats.totalProducts}</p>
-        </div>
+    <div>
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[18px] mb-7">
+        {[
+          { label: 'Total orders', value: stats.totalOrders, sub: 'All time' },
+          { label: 'Revenue', value: formatPrice(stats.totalRevenue), sub: 'All time' },
+          { label: 'Users', value: stats.totalUsers, sub: 'Registered accounts' },
+          { label: 'Products', value: stats.totalProducts, sub: 'In catalog' },
+        ].map((s) => (
+          <div key={s.label} className="bg-brand-card border border-brand-border p-5">
+            <div className="text-[12px] uppercase tracking-[1.2px] text-brand-muted font-[700]">{s.label}</div>
+            <div className="text-[28px] font-[800] mt-2">{s.value}</div>
+            <div className="text-[12px] text-brand-muted mt-1">{s.sub}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Order Status */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Orders by Status</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stats.ordersByStatus.map((s) => (
-            <div key={s._id} className="p-4 border border-gray-200">
-              <p className="text-sm text-gray-500 capitalize">{s._id}</p>
-              <p className="text-xl font-bold text-gray-800">{s.count}</p>
-            </div>
-          ))}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1.6fr] gap-5 items-start">
+        {/* Orders by status */}
+        <div className="bg-brand-card border border-brand-border">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border">
+            <div className="text-[15px] font-[700]">Orders by status</div>
+          </div>
+          <div className="p-5">
+            {STATUS_LIST.map((s) => (
+              <div key={s} className="flex items-center gap-3 py-2 text-[13px]">
+                <span className="w-[9px] h-[9px] rounded-full flex-shrink-0" style={{ background: STATUS_COLOR[s] }} />
+                <span className="flex-1 capitalize font-[600]">{s}</span>
+                <span className="flex-[2] h-[6px] bg-black/15 overflow-hidden">
+                  <span className="h-full block" style={{ width: `${(statusCounts[s] / maxCount) * 100}%`, background: STATUS_COLOR[s] }} />
+                </span>
+                <span className="w-[26px] text-right font-[700]">{statusCounts[s]}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Recent Orders */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Orders</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        {/* Recent orders */}
+        <div className="bg-brand-card border border-brand-border">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-brand-border">
+            <div className="text-[15px] font-[700]">Recent orders</div>
+            <Link to="/admin/orders" className="bg-transparent border border-brand-border text-brand-text px-3 py-1.5 text-[11px] font-[700] uppercase tracking-[1px] hover:bg-black/8 transition-colors">View all</Link>
+          </div>
+          <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-500">Order ID</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-500">Customer</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-500">Total</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
+              <tr className="border-b border-brand-border">
+                <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Order</th>
+                <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Customer</th>
+                <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Total</th>
+                <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Payment</th>
+                <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Status</th>
               </tr>
             </thead>
             <tbody>
-              {stats.recentOrders.map((order) => (
-                <tr key={order._id} className="border-b border-gray-100">
-                  <td className="py-3 px-4 text-gray-800">{order._id.slice(-8)}</td>
-                  <td className="py-3 px-4 text-gray-600">{order.user?.name || 'N/A'}</td>
-                  <td className="py-3 px-4 text-gray-800">{formatPrice(order.total)}</td>
-                  <td className="py-3 px-4">
-                    <span className={`text-xs px-2 py-1 ${order.status === 'delivered' ? 'bg-green-100 text-green-700' : order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+              {stats.recentOrders.map((order: any) => (
+                <tr key={order.id} className="hover:bg-black/5">
+                  <td className="py-3 px-5 font-[700]">{order.id.slice(-8)}</td>
+                  <td className="py-3 px-5">{order.user?.name || 'N/A'}</td>
+                  <td className="py-3 px-5">{formatPrice(order.total)}</td>
+                  <td className="py-3 px-5">
+                    <span className="inline-block px-2.5 py-1 text-[11px] font-[700] uppercase tracking-[.5px] text-brand-cream" style={{ background: PAY_COLOR[order.paymentStatus] || '#8a6d3f' }}>
+                      {order.paymentStatus}
+                    </span>
+                  </td>
+                  <td className="py-3 px-5">
+                    <span className="inline-block px-2.5 py-1 text-[11px] font-[700] uppercase tracking-[.5px] text-brand-cream" style={{ background: STATUS_COLOR[order.status] || '#8a6d3f' }}>
                       {order.status}
                     </span>
                   </td>

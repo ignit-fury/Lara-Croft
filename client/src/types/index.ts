@@ -1,8 +1,8 @@
 export interface Product {
-  _id: string;
+  id: string;
   name: string;
   slug: string;
-  category: Category;
+  category: Category | string;
   brand: string;
   price: number;
   originalPrice: number;
@@ -18,7 +18,7 @@ export interface Product {
 }
 
 export interface Category {
-  _id: string;
+  id: string;
   name: string;
   slug: string;
   image?: string;
@@ -27,12 +27,12 @@ export interface Category {
 }
 
 export interface User {
-  _id: string;
+  id: string;
   supabaseId: string;
   email: string;
   name: string;
   avatar?: string;
-  role: 'user' | 'admin' | 'manager';
+  role: 'user' | 'admin' | 'manager' | 'super_admin';
   addresses: Address[];
   preferences: { newsletter: boolean; notifications: boolean };
   createdAt: string;
@@ -52,13 +52,14 @@ export interface Address {
 
 export interface CartItem {
   product: Product;
+  productId: string;
   size: string;
   quantity: number;
 }
 
 export interface Order {
-  _id: string;
-  user: User;
+  id: string;
+  user: User | string;
   items: OrderItem[];
   subtotal: number;
   shipping: number;
@@ -77,7 +78,7 @@ export interface Order {
 }
 
 export interface OrderItem {
-  product: string;
+  productId: string;
   name: string;
   price: number;
   size: string;

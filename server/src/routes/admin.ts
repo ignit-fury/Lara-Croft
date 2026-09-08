@@ -14,7 +14,7 @@ import {
 const router = Router();
 
 router.use(authenticate);
-router.use(authorize('admin', 'manager'));
+router.use(authorize('admin', 'manager', 'super_admin'));
 
 router.get('/dashboard', getDashboardStats);
 router.get('/orders', getOrders);
