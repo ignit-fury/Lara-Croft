@@ -3,6 +3,7 @@ import express from 'express';
 import { env } from '../config/env';
 import { findOne, updateOne } from '../db/supabase-db';
 import crypto from 'crypto';
+import { sendOrderConfirmation } from '../services/emailService';
 
 const router = Router();
 
@@ -44,6 +45,20 @@ router.post('/razorpay', express.raw({ type: 'application/json' }), async (req: 
             status: 'confirmed',
             razorpay_payment_id: payment.id,
           });
+          const user = await findOne('users', { id: order.user_id });
+          if (user) {
+            await sendOrderConfirmation({
+              to: user.email,
+              customerName: user.name || 'Customer',
+              orderId: order.id,
+              items: order.items.map((i: any) => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price })),
+              subtotal: order.subtotal,
+              shipping: order.shipping,
+              tax: order.tax,
+              total: order.total,
+              shippingAddress: order.shipping_address || { line1: '', city: '', state: '', postalCode: '', country: 'IN', phone: '' },
+            }).catch(() => {});
+          }
         }
         break;
       }
