@@ -54,8 +54,10 @@ export default function Account() {
     setSaving(true);
     try {
       const res = await api.post('/auth/addresses', addressForm);
-      setAddresses([...addresses, addressForm]);
-      setUser(res.data.data);
+      if (res.data.data?.addresses) {
+        setAddresses(res.data.data.addresses);
+        if (user) setUser({ ...user, addresses: res.data.data.addresses });
+      }
       setAddressForm({ ...emptyAddress });
       setShowForm(false);
       toast.success('Address saved');
@@ -69,10 +71,10 @@ export default function Account() {
   const handleDeleteAddress = async (index: number) => {
     try {
       const res = await api.delete(`/auth/addresses/${index}`);
-      const updated = [...addresses];
-      updated.splice(index, 1);
-      setAddresses(updated);
-      setUser(res.data.data);
+      if (res.data.data?.addresses) {
+        setAddresses(res.data.data.addresses);
+        if (user) setUser({ ...user, addresses: res.data.data.addresses });
+      }
       toast.success('Address removed');
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to delete address');

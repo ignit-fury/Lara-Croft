@@ -25,11 +25,12 @@ export default function AdminOrders() {
       navigate('/admin/login');
       return;
     }
+    setLoading(true);
     const params = statusFilter !== 'all' ? `?status=${statusFilter}` : '';
     api.get(`/admin/orders${params}`).then((res) => {
       setOrders(res.data.data);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, [user, navigate, statusFilter]);
 
   const handleStatusChange = async (orderId: string, status: string) => {

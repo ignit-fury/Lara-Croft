@@ -91,7 +91,9 @@ export default function Checkout() {
       if (saveAddress && selectedSavedIndex === null) {
         try {
           const res = await api.post('/auth/addresses', address);
-          setUser(res.data.data);
+          if (user && res.data.data?.addresses) {
+            setUser({ ...user, addresses: res.data.data.addresses });
+          }
           toast.success('Address saved to your account');
         } catch {
           // continue with checkout even if save fails
