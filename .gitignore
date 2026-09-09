@@ -7,4 +7,6 @@ client_secret*.json
 *.log
 .superpowers/
 /Croft
-/docs
+/docsbuilding-mern-stack-e-commerce-from-lara-croft-html-frontend.json
+client_secret_*.json
+*.temp
