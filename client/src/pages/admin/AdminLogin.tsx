@@ -28,7 +28,7 @@ export default function AdminLogin() {
       toast.success('Welcome back');
       navigate('/admin');
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Login failed');
+      toast.error(err.response?.data?.error || 'Invalid ID or Password');
     } finally {
       setLoading(false);
     }

@@ -89,7 +89,8 @@ export default function AdminOrders() {
                 <select
                   value={order.status}
                   onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                  className="bg-white border border-brand-border text-brand-text px-2 py-[7px] text-[12.5px] font-[600] cursor-pointer"
+                  disabled={order.status === 'delivered' || order.status === 'cancelled'}
+                  className={`bg-white border border-brand-border text-brand-text px-2 py-[7px] text-[12.5px] font-[600] ${order.status === 'delivered' || order.status === 'cancelled' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   {STATUS_LIST.map((s) => (
                     <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>

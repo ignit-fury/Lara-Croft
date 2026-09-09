@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import api from '../services/api';
 import { useCartStore } from '../stores/useCartStore';
 import { useUserStore } from '../stores/useUserStore';
 import toast from 'react-hot-toast';
+import type { Address } from '../types';
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
@@ -17,9 +18,12 @@ declare global {
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user, setUser } = useUserStore();
   const { items, total, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [selectedSavedIndex, setSelectedSavedIndex] = useState<number | null>(null);
+  const [saveAddress, setSaveAddress] = useState(false);
   const [address, setAddress] = useState({
     label: 'Home',
     line1: '',
@@ -30,6 +34,42 @@ export default function Checkout() {
     country: 'IN',
     phone: '',
   });
+
+  useEffect(() => {
+    if (!user) return;
+    api.get('/auth/addresses').then((res) => {
+      setSavedAddresses(res.data.data);
+    });
+  }, [user]);
+
+  const selectSavedAddress = (index: number) => {
+    const addr = savedAddresses[index];
+    setSelectedSavedIndex(index);
+    setAddress({
+      label: addr.label,
+      line1: addr.line1,
+      line2: addr.line2 || '',
+      city: addr.city,
+      state: addr.state,
+      postalCode: addr.postalCode,
+      country: addr.country,
+      phone: addr.phone,
+    });
+  };
+
+  const useNewAddress = () => {
+    setSelectedSavedIndex(null);
+    setAddress({
+      label: 'Home',
+      line1: '',
+      line2: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: 'IN',
+      phone: '',
+    });
+  };
 
   const loadRazorpay = () => {
     return new Promise<boolean>((resolve) => {
@@ -48,6 +88,16 @@ export default function Checkout() {
     }
     setLoading(true);
     try {
+      if (saveAddress && selectedSavedIndex === null) {
+        try {
+          const res = await api.post('/auth/addresses', address);
+          setUser(res.data.data);
+          toast.success('Address saved to your account');
+        } catch {
+          // continue with checkout even if save fails
+        }
+      }
+
       const res: any = await api.post('/orders/create-checkout-session', { shippingAddress: address });
       const { orderId, amount } = res.data.data;
       console.log('[RAZORPAY] Order created:', { orderId, amount, key: import.meta.env.VITE_RAZORPAY_KEY_ID });
@@ -111,9 +161,33 @@ export default function Checkout() {
     <div className="max-w-[1400px] mx-auto px-6 py-10">
       <h1 className="text-[28px] font-extrabold text-brand-text uppercase tracking-wide mb-8">Checkout</h1>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Address Form */}
         <div className="lg:col-span-2">
           <h2 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-4">Shipping Address</h2>
+
+          {savedAddresses.length > 0 && (
+            <div className="mb-4">
+              <div className="flex gap-3 mb-3">
+                {savedAddresses.map((addr, i) => (
+                  <button
+                    key={i}
+                    onClick={() => selectSavedAddress(i)}
+                    className={`text-left border p-3 flex-1 transition-colors ${selectedSavedIndex === i ? 'border-brand-accent bg-brand-accent/10' : 'border-brand-border hover:border-brand-muted'}`}
+                  >
+                    <span className="text-[11px] font-bold uppercase tracking-[1px] text-brand-accent block mb-1">{addr.label}</span>
+                    <p className="text-[12px] text-brand-text leading-tight">{addr.line1}</p>
+                    <p className="text-[12px] text-brand-text leading-tight">{addr.city}, {addr.state}</p>
+                  </button>
+                ))}
+                <button
+                  onClick={useNewAddress}
+                  className={`text-center border p-3 flex-1 transition-colors ${selectedSavedIndex === null ? 'border-brand-accent bg-brand-accent/10' : 'border-brand-border hover:border-brand-muted'}`}
+                >
+                  <span className="text-[12px] text-brand-muted">+ New Address</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <input type="text" placeholder="Label (e.g. Home)" value={address.label} onChange={(e) => setAddress({ ...address, label: e.target.value })} className="col-span-2 border border-brand-border bg-brand-card text-brand-text px-4 py-3 text-[13px] focus:outline-none focus:border-brand-accent" />
@@ -124,10 +198,15 @@ export default function Checkout() {
               <input type="text" placeholder="PIN Code *" value={address.postalCode} onChange={(e) => setAddress({ ...address, postalCode: e.target.value })} className="border border-brand-border bg-brand-card text-brand-text px-4 py-3 text-[13px] focus:outline-none focus:border-brand-accent" />
               <input type="tel" placeholder="Phone *" value={address.phone} onChange={(e) => setAddress({ ...address, phone: e.target.value })} className="border border-brand-border bg-brand-card text-brand-text px-4 py-3 text-[13px] focus:outline-none focus:border-brand-accent" />
             </div>
+            {selectedSavedIndex === null && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="w-4 h-4 accent-brand-accent" />
+                <span className="text-[13px] text-brand-muted">Save this address for future orders</span>
+              </label>
+            )}
           </div>
         </div>
 
-        {/* Order Summary */}
         <div className="p-6 border border-brand-border h-fit" style={{ background: '#fafafa' }}>
           <h2 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-4">Order Summary</h2>
           <div className="space-y-3 mb-4">

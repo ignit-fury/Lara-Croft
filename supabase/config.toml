@@ -1,0 +1,10 @@
+[project]
+ref = "lnbzbearlghucuftyncd"
+
+[auth]
+site_url = "https://client-topaz-chi-71.vercel.app"
+additional_redirect_urls = ["https://client-topaz-chi-71.vercel.app", "https://client-topaz-chi-71.vercel.app/**", "http://localhost:5173", "http://localhost:5173/**", "http://localhost:5174", "http://localhost:5174/**", "https://lara-croft.vercel.app", "https://lara-croft.vercel.app/**"]
+
+[auth.external.google]
+enabled = true
+client_id = "34196280126-9vd9vtumh88jvgb284n3kcea5j3pfvvn.apps.googleusercontent.com"

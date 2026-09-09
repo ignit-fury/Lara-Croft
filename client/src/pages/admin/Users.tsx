@@ -18,10 +18,13 @@ export default function AdminUsers() {
   }, []);
 
   const handleRoleChange = async (userId: string, role: string) => {
+    const target = users.find((u) => u.id === userId);
+    if (!target) return;
+    if (!window.confirm(`Change ${target.name}'s role to ${role}?`)) return;
     try {
       await api.put(`/admin/users/${userId}/role`, { role });
       setUsers(users.map((u) => u.id === userId ? { ...u, role } : u));
-      toast.success('Role updated');
+      toast.success(`${target.name} is now ${role}`);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to update role');
     }
@@ -49,8 +52,8 @@ export default function AdminUsers() {
               <td className="py-3 px-5 text-brand-muted text-[12px]">{u.email}</td>
               <td className="py-3 px-5">
                 {u.role === 'super_admin' ? (
-                  <span className="inline-flex items-center gap-1 bg-brand-accent text-brand-cream px-2.5 py-[5px] text-[11px] font-[700] uppercase tracking-wide">
-                    Super Admin
+                  <span className="inline-flex items-center gap-1 px-2.5 py-[5px] text-[11px] font-[700] uppercase tracking-wide" style={{ backgroundColor: '#e63946', color: '#fdf0d5' }}>
+                    ★ Super Admin
                   </span>
                 ) : isSuperAdmin ? (
                   <select
@@ -63,7 +66,19 @@ export default function AdminUsers() {
                     <option value="admin">Admin</option>
                   </select>
                 ) : (
-                  <span className="text-[12px] font-[600] capitalize">{u.role}</span>
+                  <span
+                    className="inline-flex items-center px-2.5 py-[5px] text-[11px] font-[700] uppercase tracking-wide"
+                    style={{
+                      backgroundColor:
+                        u.role === 'super_admin' ? '#e63946' :
+                        u.role === 'admin' ? '#8a6d3f' :
+                        u.role === 'manager' ? '#4c5a2e' :
+                        '#666',
+                      color: '#fdf0d5',
+                    }}
+                  >
+                    {u.role}
+                  </span>
                 )}
               </td>
             </tr>

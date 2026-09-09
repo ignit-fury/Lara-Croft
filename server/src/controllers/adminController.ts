@@ -85,11 +85,16 @@ export async function updateOrderStatus(req: AuthRequest, res: Response): Promis
   try {
     const { status } = req.body;
     const id = req.params.id as string;
-    const order = await updateOne('orders', id, { status });
-    if (!order) {
+    const existing = await findById('orders', id);
+    if (!existing) {
       res.status(404).json({ success: false, error: 'Order not found' });
       return;
     }
+    if (existing.status === 'delivered' || existing.status === 'cancelled') {
+      res.status(400).json({ success: false, error: 'Cannot change status of delivered or cancelled order' });
+      return;
+    }
+    const order = await updateOne('orders', id, { status });
     res.json({ success: true, data: normalize(order) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

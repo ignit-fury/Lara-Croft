@@ -76,7 +76,12 @@ export async function updateProfile(req: AuthRequest, res: Response): Promise<vo
 export async function addAddress(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { label, line1, line2, city, state, postalCode, country, phone } = req.body;
-    const addresses = [...(req.user.addresses || []), {
+    const addresses = [...(req.user.addresses || [])];
+    if (addresses.length >= 5) {
+      res.status(400).json({ success: false, error: 'Maximum 5 addresses allowed' });
+      return;
+    }
+    addresses.push({
       label,
       line1,
       line2,
@@ -85,8 +90,32 @@ export async function addAddress(req: AuthRequest, res: Response): Promise<void>
       postalCode,
       country: country || 'IN',
       phone,
-    }];
+    });
 
+    const user = await updateOne('users', req.userId!, { addresses });
+    res.json({ success: true, data: normalize(user) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+export async function getAddresses(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    res.json({ success: true, data: req.user.addresses || [] });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+export async function deleteAddress(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const index = parseInt(req.params.index, 10);
+    const addresses = [...(req.user.addresses || [])];
+    if (index < 0 || index >= addresses.length) {
+      res.status(400).json({ success: false, error: 'Invalid address index' });
+      return;
+    }
+    addresses.splice(index, 1);
     const user = await updateOne('users', req.userId!, { addresses });
     res.json({ success: true, data: normalize(user) });
   } catch (error: any) {
