@@ -10,6 +10,12 @@ export async function createCheckoutSession(req: AuthRequest, res: Response): Pr
   try {
     const { shippingAddress } = req.body;
 
+    const existingOrder = await findOne('orders', { user_id: req.userId!, payment_status: 'pending', status: 'pending' });
+    if (existingOrder) {
+      res.status(400).json({ success: false, error: 'Payment already in progress. Please complete or cancel the existing order.' });
+      return;
+    }
+
     const cart = await findOne('cart', { user_id: req.userId! });
     if (!cart || !cart.items || cart.items.length === 0) {
       res.status(400).json({ success: false, error: 'Cart is empty' });
@@ -41,12 +47,13 @@ export async function createCheckoutSession(req: AuthRequest, res: Response): Pr
     const tax = Math.round(subtotal * 0.18);
     const totalAmount = subtotal + shipping + tax;
 
+    const receiptId = `rcpt_${req.userId!}_${Date.now()}`;
     const razorpayOrder = await razorpay.orders.create({
       amount: totalAmount,
       currency: 'INR',
-      receipt: `order_${Date.now()}`,
+      receipt: receiptId,
     });
-    console.log('[ORDER] Razorpay order created:', razorpayOrder.id, 'amount:', totalAmount);
+    console.log('[ORDER] Razorpay order created:', razorpayOrder.id, 'amount:', totalAmount, 'receipt:', receiptId);
 
     const order = await insertOne('orders', {
       user_id: req.userId,
@@ -90,6 +97,11 @@ export async function confirmOrder(req: AuthRequest, res: Response): Promise<voi
     const order = await findOne('orders', { razorpay_order_id: razorpay_order_id });
     if (!order) {
       res.status(404).json({ success: false, error: 'Order not found' });
+      return;
+    }
+
+    if (order.payment_status === 'paid') {
+      res.json({ success: true, data: normalize(order) });
       return;
     }
 

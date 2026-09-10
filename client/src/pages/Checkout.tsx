@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import api from '../services/api';
 import { useCartStore } from '../stores/useCartStore';
@@ -21,6 +21,7 @@ export default function Checkout() {
   const { user, setUser } = useUserStore();
   const { items, total, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const processingRef = useRef(false);
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
   const [selectedSavedIndex, setSelectedSavedIndex] = useState<number | null>(null);
   const [saveAddress, setSaveAddress] = useState(false);
@@ -82,10 +83,12 @@ export default function Checkout() {
   };
 
   const handleCheckout = async () => {
+    if (processingRef.current) return;
     if (!address.line1 || !address.city || !address.state || !address.postalCode || !address.phone) {
       toast.error('Please fill all required fields');
       return;
     }
+    processingRef.current = true;
     setLoading(true);
     try {
       if (saveAddress && selectedSavedIndex === null) {
@@ -107,6 +110,7 @@ export default function Checkout() {
       const loaded = await loadRazorpay();
       if (!loaded) {
         toast.error('Failed to load Razorpay');
+        processingRef.current = false;
         setLoading(false);
         return;
       }
@@ -129,7 +133,15 @@ export default function Checkout() {
             navigate('/checkout/success');
           } catch (err: any) {
             toast.error(err.message || 'Payment verification failed');
+            processingRef.current = false;
+            setLoading(false);
           }
+        },
+        modal: {
+          ondismiss: () => {
+            processingRef.current = false;
+            setLoading(false);
+          },
         },
         prefill: {
           name: user?.name || '',
@@ -145,7 +157,7 @@ export default function Checkout() {
       razorpay.open();
     } catch (err: any) {
       toast.error(err.message || 'Checkout failed');
-    } finally {
+      processingRef.current = false;
       setLoading(false);
     }
   };
@@ -230,7 +242,7 @@ export default function Checkout() {
           <button
             onClick={handleCheckout}
             disabled={loading}
-            className="w-full bg-brand-accent text-brand-cream py-3.5 text-[13px] font-bold uppercase tracking-[2px] hover:bg-brand-accent2 transition-colors mt-6 disabled:opacity-50"
+            className="w-full bg-brand-accent text-brand-cream py-3.5 text-[13px] font-bold uppercase tracking-[2px] hover:bg-brand-accent2 transition-colors mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Processing...' : 'Pay with Razorpay'}
           </button>

@@ -22,7 +22,7 @@ interface DashboardStats {
   totalUsers: number;
   totalProducts: number;
   recentOrders: any[];
-  ordersByStatus: { _id: string; count: number }[];
+  ordersByStatus: { status: string; count: number }[];
 }
 
 export default function Dashboard() {
@@ -42,7 +42,7 @@ export default function Dashboard() {
 
   const statusCounts: Record<string, number> = {};
   STATUS_LIST.forEach((s) => (statusCounts[s] = 0));
-  stats.ordersByStatus.forEach((s) => (statusCounts[s._id] = s.count));
+  stats.ordersByStatus.forEach((s) => (statusCounts[s.status] = s.count));
   const maxCount = Math.max(...Object.values(statusCounts), 1);
 
   return (
