@@ -41,7 +41,11 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     const normalized = origin.replace(/\/+$/, '');
-    if (normalized === frontendUrl || normalized.endsWith('.vercel.app')) {
+    if (
+      normalized === frontendUrl ||
+      normalized.endsWith('.vercel.app') ||
+      normalized.startsWith('http://localhost')
+    ) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
