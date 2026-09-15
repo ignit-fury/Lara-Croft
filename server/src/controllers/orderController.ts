@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import crypto from 'crypto';
 import { AuthRequest } from '../middleware/auth';
-import { supabase, findOne, insertOne, updateOne } from '../db/supabase-db';
+import { supabase, findOne, findMany, insertOne, updateOne } from '../db/supabase-db';
 import { razorpay } from '../config/razorpay';
 import { normalize } from '../db/normalize';
 import { env } from '../config/env';
@@ -10,8 +10,8 @@ export async function createCheckoutSession(req: AuthRequest, res: Response): Pr
   try {
     const { shippingAddress } = req.body;
 
-    const existingOrder = await findOne('orders', { user_id: req.userId!, payment_status: 'pending', status: 'pending' });
-    if (existingOrder) {
+    const existingOrders = await findMany('orders', { user_id: req.userId!, payment_status: 'pending', status: 'pending' });
+    if (existingOrders.length > 0) {
       res.status(400).json({ success: false, error: 'Payment already in progress. Please complete or cancel the existing order.' });
       return;
     }
@@ -71,6 +71,7 @@ export async function createCheckoutSession(req: AuthRequest, res: Response): Pr
 
     res.json({ success: true, data: { orderId: razorpayOrder.id, amount: totalAmount, dbOrderId: order.id } });
   } catch (error: any) {
+    console.error('[ORDER] createCheckoutSession error:', error.message, error.stack);
     res.status(500).json({ success: false, error: error.message });
   }
 }

@@ -10,3 +10,5 @@ client_secret*.json
 /docsbuilding-mern-stack-e-commerce-from-lara-croft-html-frontend.json
 client_secret_*.json
 *.temp
+.vercel
+.env*
