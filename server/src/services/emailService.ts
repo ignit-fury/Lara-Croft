@@ -1,4 +1,3 @@
-import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend';
 import { env } from '../config/env';
 
 interface OrderEmailData {
@@ -17,17 +16,6 @@ interface OrderEmailData {
     postalCode: string;
     phone?: string;
   };
-}
-
-const mailerSend = env.MAILERSEND_API_KEY
-  ? new MailerSend({ apiKey: env.MAILERSEND_API_KEY })
-  : null;
-
-function parseSender(raw: string | undefined): { email: string; name: string } {
-  if (!raw) return { email: '', name: 'LARA CROFT' };
-  const match = raw.match(/^(.*)<([^<>]+)>$/);
-  if (match) return { name: match[1].trim() || 'LARA CROFT', email: match[2].trim() };
-  return { email: raw.trim(), name: 'LARA CROFT' };
 }
 
 function formatPrice(paise: number): string {
@@ -67,7 +55,7 @@ function buildOrderEmailHtml(data: OrderEmailData): string {
           <p style="color:rgba(247,242,236,.7);margin:4px 0 0;font-size:11px;letter-spacing:2px;text-transform:uppercase;">Order Confirmation & Invoice</p>
         </div>
         <div style="background:#f0fdf4;padding:16px 32px;text-align:center;border-bottom:1px solid #e5e7eb;">
-          <p style="margin:0;font-size:14px;color:#166534;font-weight:600;">✓ Order Placed Successfully</p>
+          <p style="margin:0;font-size:14px;color:#166534;font-weight:600;">\u2713 Order Placed Successfully</p>
         </div>
         <div style="padding:32px;">
           <p style="margin:0 0 4px;font-size:16px;color:#333;font-weight:600;">Hi ${data.customerName},</p>
@@ -144,8 +132,8 @@ function buildOrderEmailHtml(data: OrderEmailData): string {
           </p>
         </div>
         <div style="background:#fafafa;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
-          <p style="margin:0;font-size:12px;color:#999;">LARA CROFT — Premium Expedition Wear</p>
-          <p style="margin:6px 0 0;font-size:11px;color:#ccc;">© 2026 Lara Croft. All rights reserved.</p>
+          <p style="margin:0;font-size:12px;color:#999;">LARA CROFT \u2014 Premium Expedition Wear</p>
+          <p style="margin:6px 0 0;font-size:11px;color:#ccc;">\u00a9 2026 Lara Croft. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -154,30 +142,44 @@ function buildOrderEmailHtml(data: OrderEmailData): string {
 }
 
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {
-  if (!mailerSend) {
-    console.log('[EMAIL] MAILERSEND_API_KEY not configured, skipping email');
-    return;
-  }
+  const apiKey = env.BREVO_API_KEY;
+  const senderEmail = env.BREVO_SENDER_EMAIL;
+  const senderName = env.BREVO_SENDER_NAME || 'LARA CROFT';
 
-  const from = parseSender(env.MAILERSEND_FROM || env.SMTP_FROM);
-  if (!from.email) {
-    console.log('[EMAIL] No sender address configured (MAILERSEND_FROM), skipping email');
+  if (!apiKey || !senderEmail) {
+    console.log('[EMAIL] BREVO_API_KEY or BREVO_SENDER_EMAIL not configured, skipping email');
     return;
   }
 
   try {
     const invoiceNo = `INV-${data.orderId.slice(-8).toUpperCase()}`;
     const html = buildOrderEmailHtml(data);
-    const emailParams = new EmailParams()
-      .setFrom(new Sender(from.email, from.name))
-      .setTo([new Recipient(data.to, data.customerName)])
-      .setSubject(`Order Confirmed #${data.orderId} — Invoice ${invoiceNo}`)
-      .setHtml(html)
-      .setText(`Hi ${data.customerName}, your LARA CROFT order #${data.orderId} (${invoiceNo}) is confirmed. Total: ${formatPrice(data.total)}.`);
-    await mailerSend.email.send(emailParams);
-    console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via MailerSend`);
+    const text = `Hi ${data.customerName}, your LARA CROFT order #${data.orderId} (${invoiceNo}) is confirmed. Total: ${formatPrice(data.total)}.`;
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey,
+      },
+      body: JSON.stringify({
+        sender: { email: senderEmail, name: senderName },
+        to: [{ email: data.to, name: data.customerName }],
+        subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
+        htmlContent: html,
+        textContent: text,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error(`[EMAIL] Brevo API error ${response.status}:`, err);
+      return;
+    }
+
+    console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via Brevo`);
   } catch (error) {
-    console.error('[EMAIL] Failed to send via MailerSend:', error);
-    throw error;
+    console.error('[EMAIL] Failed to send via Brevo:', error);
   }
 }
