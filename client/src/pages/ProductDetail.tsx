@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useCartStore } from '../stores/useCartStore';
 import { useUserStore } from '../stores/useUserStore';
 import toast from 'react-hot-toast';
+import { Minus, Plus } from 'lucide-react';
 import type { Product } from '../types';
 
 function formatPrice(paise: number): string {
@@ -121,9 +122,9 @@ export default function ProductDetail() {
           <div>
             <h3 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-3">Quantity</h3>
             <div className="flex items-center border border-brand-border w-fit">
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-2 text-brand-muted hover:text-brand-text hover:bg-brand-card transition-colors">−</button>
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-2 text-brand-muted hover:text-brand-text hover:bg-brand-card transition-colors"><Minus size={16} /></button>
               <span className="px-4 py-2 text-[13px] font-semibold min-w-[40px] text-center text-brand-text">{quantity}</span>
-              <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-2 text-brand-muted hover:text-brand-text hover:bg-brand-card transition-colors">+</button>
+              <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-2 text-brand-muted hover:text-brand-text hover:bg-brand-card transition-colors"><Plus size={16} /></button>
             </div>
           </div>
 

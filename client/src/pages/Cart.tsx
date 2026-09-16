@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCartStore } from '../stores/useCartStore';
 import { useUserStore } from '../stores/useUserStore';
+import { ShoppingCart, X, Minus, Plus, Trash2 } from 'lucide-react';
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
@@ -28,13 +29,13 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
         style={{ background: '#fafafa', borderLeft: '1px solid #e0e0e0', transitionTimingFunction: 'cubic-bezier(.4,0,.2,1)' }}>
         <div className="px-6 py-5 border-b border-brand-border flex items-center justify-between">
           <h3 className="text-base font-bold uppercase tracking-wide">Shopping Cart ({items.length})</h3>
-          <button onClick={onClose} className="text-brand-muted text-2xl hover:text-brand-text transition-colors">✕</button>
+          <button onClick={onClose} className="text-brand-muted hover:text-brand-text transition-colors"><X size={24} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {items.length === 0 ? (
             <div className="text-center py-12 text-brand-muted">
-              <div className="text-5xl mb-4 opacity-40">🛒</div>
+              <div className="mb-4 opacity-40 flex justify-center"><ShoppingCart size={48} /></div>
               <p className="text-sm">Your cart is empty.</p>
               <p className="text-xs mt-1.5 opacity-70">Time to gear up for an adventure.</p>
             </div>
@@ -50,11 +51,11 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
                 <div className="flex flex-col items-end gap-2">
                   <div className="text-[15px] font-bold">{formatPrice(item.product.price * item.quantity)}</div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => updateItem(item.product.id, item.size, Math.max(1, item.quantity - 1))} className="w-7 h-7 bg-brand-card border border-brand-border text-brand-text text-sm rounded flex items-center justify-center hover:border-brand-accent hover:text-brand-accent transition-colors">−</button>
+                    <button onClick={() => updateItem(item.product.id, item.size, Math.max(1, item.quantity - 1))} className="w-7 h-7 bg-brand-card border border-brand-border text-brand-text rounded flex items-center justify-center hover:border-brand-accent hover:text-brand-accent transition-colors"><Minus size={14} /></button>
                     <span className="text-[13px] font-semibold min-w-[20px] text-center">{item.quantity}</span>
-                    <button onClick={() => updateItem(item.product.id, item.size, item.quantity + 1)} className="w-7 h-7 bg-brand-card border border-brand-border text-brand-text text-sm rounded flex items-center justify-center hover:border-brand-accent hover:text-brand-accent transition-colors">+</button>
+                    <button onClick={() => updateItem(item.product.id, item.size, item.quantity + 1)} className="w-7 h-7 bg-brand-card border border-brand-border text-brand-text rounded flex items-center justify-center hover:border-brand-accent hover:text-brand-accent transition-colors"><Plus size={14} /></button>
                   </div>
-                  <button onClick={() => removeItem(item.product.id, item.size)} className="text-brand-muted text-lg hover:text-brand-accent transition-colors p-1">🗑</button>
+                  <button onClick={() => removeItem(item.product.id, item.size)} className="text-brand-muted hover:text-brand-accent transition-colors p-1"><Trash2 size={16} /></button>
                 </div>
               </div>
             ))

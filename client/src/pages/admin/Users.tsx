@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useUserStore } from '../../stores/useUserStore';
 import toast from 'react-hot-toast';
+import { Star } from 'lucide-react';
 
 export default function AdminUsers() {
   const { user } = useUserStore();
@@ -52,8 +53,8 @@ export default function AdminUsers() {
               <td className="py-3 px-5 text-brand-muted text-[12px]">{u.email}</td>
               <td className="py-3 px-5">
                 {u.role === 'super_admin' ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-[5px] text-[11px] font-[700] uppercase tracking-wide" style={{ backgroundColor: '#e63946', color: '#fdf0d5' }}>
-                    ★ Super Admin
+                    <span className="inline-flex items-center gap-1 px-2.5 py-[5px] text-[11px] font-[700] uppercase tracking-wide" style={{ backgroundColor: '#e63946', color: '#fdf0d5' }}>
+                    <Star size={11} fill="currentColor" /> Super Admin
                   </span>
                 ) : isSuperAdmin ? (
                   <select

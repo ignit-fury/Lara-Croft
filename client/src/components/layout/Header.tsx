@@ -3,6 +3,7 @@ import { useUserStore } from '../../stores/useUserStore';
 import { useCartStore } from '../../stores/useCartStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useState } from 'react';
+import { ShoppingCart, User, Menu, X } from 'lucide-react';
 import CartDrawer from '../../pages/Cart';
 
 export default function Header() {
@@ -39,7 +40,7 @@ export default function Header() {
 
           <div className="flex items-center gap-4">
             <button onClick={() => setCartOpen(true)} className="relative text-brand-muted hover:text-brand-text transition-colors text-lg">
-              🛒
+              <ShoppingCart size={20} />
               {itemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-brand-accent text-brand-cream text-[10px] font-bold w-[18px] h-[18px] rounded-full flex items-center justify-center">
                   {itemCount}
@@ -49,8 +50,8 @@ export default function Header() {
 
             {user ? (
               <div className="hidden md:flex items-center gap-3">
-                <Link to="/account" className="text-brand-muted text-sm hover:text-brand-text transition-colors">
-                  👤 {user.name}
+                <Link to="/account" className="text-brand-muted text-sm hover:text-brand-text transition-colors flex items-center gap-1.5">
+                  <User size={16} /> {user.name}
                 </Link>
                 {(user.role === 'admin' || user.role === 'manager' || user.role === 'super_admin') && (
                   <Link to="/admin" className="text-brand-accent text-sm font-semibold hover:text-brand-accent2 transition-colors">Admin</Link>
@@ -63,7 +64,7 @@ export default function Header() {
               </button>
             )}
 
-            <button onClick={() => setMobileOpen(true)} className="md:hidden text-brand-text text-2xl p-1">☰</button>
+            <button onClick={() => setMobileOpen(true)} className="md:hidden text-brand-text p-1"><Menu size={24} /></button>
           </div>
         </div>
       </header>
@@ -71,7 +72,7 @@ export default function Header() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[99] flex flex-col items-center justify-center gap-8" style={{ background: 'rgba(255,255,255,.97)' }}>
-          <button onClick={() => setMobileOpen(false)} className="absolute top-5 right-5 text-brand-text text-2xl p-1">✕</button>
+          <button onClick={() => setMobileOpen(false)} className="absolute top-5 right-5 text-brand-text p-1"><X size={24} /></button>
           <Link to="/" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Shop</Link>
           <Link to="/collection" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Collection</Link>
           <Link to="/sale" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Sale</Link>

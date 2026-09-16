@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useUserStore } from '../../stores/useUserStore';
 import toast from 'react-hot-toast';
+import { Star } from 'lucide-react';
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
@@ -190,7 +191,7 @@ export default function AdminProducts() {
                   </div>
                 </td>
                 <td className="py-3 px-5 font-[700]">
-                  {p.name}{p.featured && <span className="text-brand-muted text-[12px] ml-1">★</span>}
+                  {p.name}{p.featured && <Star size={12} className="text-brand-muted ml-1 inline" fill="currentColor" />}
                 </td>
                 <td className="py-3 px-5">{p.brand}</td>
                 <td className="py-3 px-5">{p.category?.name || '—'}</td>
