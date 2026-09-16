@@ -217,7 +217,7 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
     try {
       const transporter = getSmtpTransporter();
       const mailOptions = {
-        from: env.SMTP_FROM || 'LARA CROFT <lc8758570@gmail.com>',
+        from: env.SMTP_FROM || 'LARA CROFT <laracroft0710@outlook.com>',
         to: data.to,
         subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
         html: html,
