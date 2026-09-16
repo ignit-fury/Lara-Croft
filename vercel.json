@@ -1,6 +1,6 @@
 {
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter client build",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build --workspace client",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/((?!assets/|api/).*)", "destination": "/index.html" }
