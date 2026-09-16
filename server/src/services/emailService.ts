@@ -179,4 +179,3 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
     console.error('[EMAIL] Failed to send via Brevo API:', error);
   }
 }
-}
