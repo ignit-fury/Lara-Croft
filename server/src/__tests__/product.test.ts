@@ -25,15 +25,26 @@ describe('Product Controller', () => {
         { id: '1', name: 'Test Product', price: 99900, slug: 'test-product' },
       ];
 
+      // Each chain method returns the same mutable chain object (real Supabase
+      // QueryBuilder does this — every builder method returns `this`).
+      const chain = {} as any;
+      chain.or = vi.fn().mockReturnValue(chain);
+      chain.eq = vi.fn().mockReturnValue(chain);
+      chain.gte = vi.fn().mockReturnValue(chain);
+      chain.lte = vi.fn().mockReturnValue(chain);
+      chain.overlaps = vi.fn().mockReturnValue(chain);
+      chain.filter = vi.fn().mockReturnValue(chain);
+      chain.order = vi.fn().mockReturnValue(chain);
+      chain.range = vi.fn().mockResolvedValue({ data: mockProducts, error: null, count: 1 });
+
       vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          order: vi.fn().mockReturnValue({
-            range: vi.fn().mockResolvedValue({ data: mockProducts, error: null, count: 1 }),
-          }),
-        }),
+        select: vi.fn().mockReturnValue(chain),
       } as any);
 
-      const result = await supabase.from('products').select('*', { count: 'exact' });
+      const result = await supabase.from('products').select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(0, 11);
+
       expect(result.data).toEqual(mockProducts);
     });
   });
@@ -69,7 +80,8 @@ describe('Product Controller', () => {
         }),
       } as any);
 
-      const result = await supabase.from('categories').select('*');
+      const chain = supabase.from('categories').select('*');
+      const result = await chain.eq('active', true).order('order_num', { ascending: true });
       expect(result.data).toHaveLength(2);
     });
   });

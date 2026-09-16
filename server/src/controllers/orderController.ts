@@ -10,8 +10,17 @@ export async function createCheckoutSession(req: AuthRequest, res: Response): Pr
   try {
     const { shippingAddress } = req.body;
 
-    const existingOrders = await findMany('orders', { user_id: req.userId!, payment_status: 'pending', status: 'pending' });
-    if (existingOrders.length > 0) {
+    // Only block on genuinely in-flight pending orders (created within the last 30 min).
+    // Stale abandoned orders from days ago must not lock the user out permanently.
+    const staleCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const existingOrders = await findMany('orders', { user_id: req.userId! });
+    const inFlight = existingOrders.filter(
+      (o: any) =>
+        o.payment_status === 'pending' &&
+        o.status === 'pending' &&
+        (o.created_at || o.createdAt) > staleCutoff,
+    );
+    if (inFlight.length > 0) {
       res.status(400).json({ success: false, error: 'Payment already in progress. Please complete or cancel the existing order.' });
       return;
     }
@@ -32,13 +41,16 @@ export async function createCheckoutSession(req: AuthRequest, res: Response): Pr
 
     const items = cart.items.map((item: any) => {
       const product = productMap.get(item.product_id);
+      if (!product) {
+        throw new Error(`Product ${item.product_id} not found in catalog (deleted or invalid)`);
+      }
       return {
         product_id: item.product_id,
-        name: product?.name || 'Unknown',
-        price: product?.price || 0,
+        name: product.name,
+        price: product.price,
         size: item.size,
         quantity: item.quantity,
-        image: product?.images?.[0] || '',
+        image: product.images?.[0] || '',
       };
     });
 
@@ -98,6 +110,12 @@ export async function confirmOrder(req: AuthRequest, res: Response): Promise<voi
     const order = await findOne('orders', { razorpay_order_id: razorpay_order_id });
     if (!order) {
       res.status(404).json({ success: false, error: 'Order not found' });
+      return;
+    }
+
+    // IDOR guard: the order must belong to the requesting user
+    if (order.user_id !== req.userId!) {
+      res.status(403).json({ success: false, error: 'Not your order' });
       return;
     }
 
@@ -185,6 +203,32 @@ export async function getOrderById(req: AuthRequest, res: Response): Promise<voi
       return;
     }
     res.json({ success: true, data: normalize(data) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+export async function cancelOrder(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const order = await findOne('orders', { id });
+    if (!order) {
+      res.status(404).json({ success: false, error: 'Order not found' });
+      return;
+    }
+    if (order.user_id !== req.userId!) {
+      res.status(403).json({ success: false, error: 'Not your order' });
+      return;
+    }
+    if (order.payment_status !== 'pending') {
+      res.status(400).json({ success: false, error: 'Only pending orders can be cancelled' });
+      return;
+    }
+    const updated = await updateOne('orders', id, {
+      status: 'cancelled',
+      payment_status: 'failed',
+    });
+    res.json({ success: true, data: normalize(updated) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

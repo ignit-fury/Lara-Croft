@@ -101,7 +101,8 @@ describe('Order Controller', () => {
         }),
       } as any);
 
-      const result = await supabase.from('orders').select('*', { count: 'exact' });
+      const chain = supabase.from('orders').select('*', { count: 'exact' });
+      const result = await chain.eq('user_id', 'user1').order('created_at', { ascending: false }).range(0, 9);
       expect(result.data).toHaveLength(1);
     });
   });

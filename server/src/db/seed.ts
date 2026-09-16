@@ -1,7 +1,13 @@
+import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://lnbzbearlghucuftyncd.supabase.co';
-const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxuYnpiZWFybGdodWN1ZnR5bmNkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODY3ODk4MiwiZXhwIjoyMTA0MjU0OTgyfQ.8iNv8H0JOfRunTtL5wZxfg7qt65gpcgQNWokZVBIyJc';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://lnbzbearlghucuftyncd.supabase.co';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SERVICE_KEY) {
+  console.error('❌ SUPABASE_SERVICE_ROLE_KEY not set. Copy .env and fill in real keys, then run: pnpm seed');
+  process.exit(1);
+}
 
 const db = createClient(SUPABASE_URL, SERVICE_KEY);
 

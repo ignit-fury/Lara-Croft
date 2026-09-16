@@ -85,18 +85,21 @@ app.get('/api/health', async (_req: express.Request, res: express.Response) => {
   try {
     const { supabase } = await import('./db/supabase-db');
     const { error } = await supabase.from('users').select('id').limit(1);
+    const healthy = !error;
+    res.status(healthy ? 200 : 503);
     res.json({
-      success: true,
+      success: healthy,
       data: {
-        status: error ? 'degraded' : 'ok',
-        db: error ? 'error' : 'ok',
+        status: healthy ? 'ok' : 'degraded',
+        db: healthy ? 'ok' : 'error',
         timestamp: new Date().toISOString(),
       },
     });
   } catch {
+    res.status(503);
     res.json({
-      success: true,
-      data: { status: 'degraded', db: 'error', timestamp: new Date().toISOString() },
+      success: false,
+      data: { status: 'down', db: 'error', timestamp: new Date().toISOString() },
     });
   }
 });

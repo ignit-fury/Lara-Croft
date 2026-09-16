@@ -1,4 +1,22 @@
 import { env } from '../config/env';
+import nodemailer from 'nodemailer';
+
+// Lazy SMTP transporter — only created when SMTP fallback is needed
+let smtpTransporter: any = null;
+function getSmtpTransporter() {
+  return nodemailer.createTransport({
+    host: env.SMTP_HOST || 'smtp.gmail.com',
+    port: env.SMTP_PORT || 587,
+    secure: false,
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+    },
+    pool: false,
+    socketTimeout: 10000,
+    connectionTimeout: 5000,
+  });
+}
 
 interface OrderEmailData {
   to: string;
@@ -151,29 +169,63 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
     const senderName = env.BREVO_SENDER_NAME || 'LARA CROFT';
 
     if (!apiKey) {
-      console.log(`[EMAIL] BREVO_API_KEY not configured, skipping email to ${data.to}`);
-      return;
+      console.log(`[EMAIL] BREVO_API_KEY not configured, falling back to SMTP for ${data.to}`);
+    } else {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        try {
+          const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json',
+              'api-key': apiKey,
+            },
+            body: JSON.stringify({
+              sender: { email: senderEmail, name: senderName },
+              to: [{ email: data.to, name: data.customerName }],
+              subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
+              htmlContent: html,
+            }),
+          });
+          clearTimeout(timeout);
+
+          if (response.ok) {
+            console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via Brevo`);
+            return;
+          } else {
+            const body = await response.text();
+            console.error(`[EMAIL] Brevo API error ${response.status}: ${body}`);
+            console.log(`[EMAIL] Falling back to SMTP for ${data.to}`);
+          }
+        } catch (fetchError: any) {
+          if (fetchError.name === 'AbortError') {
+            console.error(`[EMAIL] Brevo request timed out after 10s for ${data.to}`);
+          } else {
+            console.error(`[EMAIL] Brevo fetch failed: ${fetchError}`);
+          }
+          console.log(`[EMAIL] Falling back to SMTP for ${data.to}`);
+        }
+      } catch (fetchError) {
+        console.error(`[EMAIL] Brevo fetch failed: ${fetchError}`);
+        console.log(`[EMAIL] Falling back to SMTP for ${data.to}`);
+      }
     }
 
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': apiKey,
-      },
-      body: JSON.stringify({
-        sender: { email: senderEmail, name: senderName },
-        to: [{ email: data.to, name: data.customerName }],
+    // SMTP fallback
+    try {
+      const transporter = getSmtpTransporter();
+      const mailOptions = {
+        from: env.SMTP_FROM || 'LARA CROFT <lc8758570@gmail.com>',
+        to: data.to,
         subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
-        htmlContent: html,
-      }),
-    });
-
-    if (response.ok) {
-      console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via Brevo`);
-    } else {
-      const body = await response.text();
-      console.error(`[EMAIL] Brevo API error ${response.status}: ${body}`);
+        html: html,
+      };
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via SMTP (${info.messageId})`);
+    } catch (smtpError) {
+      console.error(`[EMAIL] SMTP fallback also failed for ${data.to}:`, smtpError);
     }
   } catch (error) {
     console.error('[EMAIL] Failed to send via Brevo API:', error);
