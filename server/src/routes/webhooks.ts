@@ -40,24 +40,34 @@ router.post('/razorpay', express.raw({ type: 'application/json' }), async (req: 
         const payment = event.payload.payment.entity;
         const order = await findOne('orders', { razorpay_order_id: payment.order_id });
         if (order) {
-          await updateOne('orders', order.id, {
-            payment_status: 'paid',
-            status: 'confirmed',
-            razorpay_payment_id: payment.id,
-          });
-          const user = await findOne('users', { id: order.user_id });
-          if (user) {
-            await sendOrderConfirmation({
-              to: user.email,
-              customerName: user.name || 'Customer',
-              orderId: order.id,
-              items: order.items.map((i: any) => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price })),
-              subtotal: order.subtotal,
-              shipping: order.shipping,
-              tax: order.tax,
-              total: order.total,
-              shippingAddress: order.shipping_address || { line1: '', city: '', state: '', postalCode: '', country: 'IN', phone: '' },
-            }).catch(() => {});
+          if (order.payment_status === 'paid') {
+            console.log(`[WEBHOOK] Order ${order.id} already paid, skipping`);
+          } else {
+            await updateOne('orders', order.id, {
+              payment_status: 'paid',
+              status: 'confirmed',
+              razorpay_payment_id: payment.id,
+            });
+
+            const user = await findOne('users', { id: order.user_id });
+            if (user) {
+              await sendOrderConfirmation({
+                to: user.email,
+                customerName: user.name || 'Customer',
+                orderId: order.id,
+                items: order.items.map((i: any) => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price })),
+                subtotal: order.subtotal,
+                shipping: order.shipping,
+                tax: order.tax,
+                total: order.total,
+                shippingAddress: order.shipping_address || { line1: '', city: '', state: '', postalCode: '', country: 'IN', phone: '' },
+              }).catch(() => {});
+            }
+          }
+
+          const cart = await findOne('cart', { user_id: order.user_id });
+          if (cart && cart.items && cart.items.length > 0) {
+            await updateOne('cart', cart.id, { items: [] });
           }
         }
         break;
@@ -65,7 +75,7 @@ router.post('/razorpay', express.raw({ type: 'application/json' }), async (req: 
       case 'payment.failed': {
         const payment = event.payload.payment.entity;
         const order = await findOne('orders', { razorpay_order_id: payment.order_id });
-        if (order) {
+        if (order && order.payment_status !== 'failed') {
           await updateOne('orders', order.id, {
             payment_status: 'failed',
             status: 'cancelled',
