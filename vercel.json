@@ -1,5 +1,5 @@
 {
-  "installCommand": "pnpm install --filter client",
+  "installCommand": "pnpm install",
   "buildCommand": "pnpm run build --filter client",
   "outputDirectory": "client/dist",
   "rewrites": [
