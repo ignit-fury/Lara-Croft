@@ -1,4 +1,3 @@
-import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 
 interface OrderEmailData {
@@ -142,32 +141,42 @@ function buildOrderEmailHtml(data: OrderEmailData): string {
   `;
 }
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp-mail.outlook.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: env.SMTP_USER || 'laracroft0710@outlook.com',
-    pass: env.SMTP_PASS || 'jcyrinzlpynaxdnx',
-  },
-});
-
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {
   try {
     const invoiceNo = `INV-${data.orderId.slice(-8).toUpperCase()}`;
     const html = buildOrderEmailHtml(data);
-    const text = `Hi ${data.customerName}, your LARA CROFT order #${data.orderId} (${invoiceNo}) is confirmed. Total: ${formatPrice(data.total)}.`;
 
-    await transporter.sendMail({
-      from: `"LARA CROFT" <laracroft0710@outlook.com>`,
-      to: data.to,
-      subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
-      html,
-      text,
+    const apiKey = env.BREVO_API_KEY;
+    const senderEmail = env.BREVO_SENDER_EMAIL || 'laracroft0710@outlook.com';
+    const senderName = env.BREVO_SENDER_NAME || 'LARA CROFT';
+
+    if (!apiKey) {
+      console.log(`[EMAIL] BREVO_API_KEY not configured, skipping email to ${data.to}`);
+      return;
+    }
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': apiKey,
+      },
+      body: JSON.stringify({
+        sender: { email: senderEmail, name: senderName },
+        to: [{ email: data.to, name: data.customerName }],
+        subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
+        htmlContent: html,
+      }),
     });
 
-    console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via Outlook SMTP`);
+    if (response.ok) {
+      console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via Brevo`);
+    } else {
+      const body = await response.text();
+      console.error(`[EMAIL] Brevo API error ${response.status}: ${body}`);
+    }
   } catch (error) {
-    console.error('[EMAIL] Failed to send via Outlook SMTP:', error);
+    console.error('[EMAIL] Failed to send via Brevo API:', error);
   }
+}
 }
