@@ -147,7 +147,7 @@ export async function confirmOrder(req: AuthRequest, res: Response): Promise<voi
     }
 
     const cart = await findOne('cart', { user_id: req.userId! });
-    if (cart) {
+    if (cart && cart.items && cart.items.length > 0) {
       await updateOne('cart', cart.id, { items: [] });
     }
 
