@@ -128,20 +128,31 @@ export default function ProductDetail() {
           </div>
 
           {/* Add to Cart */}
-          <button
-            onClick={handleAddToCart}
-            disabled={adding}
-            className="w-full bg-brand-accent text-brand-cream py-3.5 text-[13px] font-bold uppercase tracking-[2px] hover:bg-brand-accent2 transition-all hover:shadow-[0_8px_24px_rgba(111,68,35,.30)] disabled:opacity-50"
-          >
-            {adding ? 'Adding...' : 'Add to Cart'}
-          </button>
+          {(() => {
+            const isOutOfStock = product.stock === 0 || (selectedSize && product.stockBySize && product.stockBySize[selectedSize] === 0);
+            return (
+              <button
+                onClick={handleAddToCart}
+                disabled={adding || isOutOfStock}
+                className="w-full bg-brand-accent text-brand-cream py-3.5 text-[13px] font-bold uppercase tracking-[2px] hover:bg-brand-accent2 transition-all hover:shadow-[0_8px_24px_rgba(111,68,35,.30)] disabled:opacity-50"
+              >
+                {adding ? 'Adding...' : isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+              </button>
+            );
+          })()}
 
-          {product.stock <= 5 && product.stock > 0 && (
-            <p className="text-[13px] text-brand-accent font-semibold">Only {product.stock} left in stock</p>
-          )}
-
-          {product.stock === 0 && (
-            <p className="text-[13px] text-brand-muted font-semibold">Out of stock</p>
+          {selectedSize && product.stockBySize && product.stockBySize[selectedSize] !== undefined ? (
+            product.stockBySize[selectedSize] <= 5 && product.stockBySize[selectedSize] > 0 ? (
+              <p className="text-[13px] text-brand-accent font-semibold">Only {product.stockBySize[selectedSize]} left in stock</p>
+            ) : product.stockBySize[selectedSize] === 0 ? (
+              <p className="text-[13px] text-brand-muted font-semibold">Out of stock for {selectedSize}</p>
+            ) : null
+          ) : (
+            product.stock <= 5 && product.stock > 0 ? (
+              <p className="text-[13px] text-brand-accent font-semibold">Only {product.stock} left in stock</p>
+            ) : product.stock === 0 ? (
+              <p className="text-[13px] text-brand-muted font-semibold">Out of stock</p>
+            ) : null
           )}
         </div>
       </div>

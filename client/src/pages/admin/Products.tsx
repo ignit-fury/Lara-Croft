@@ -197,7 +197,17 @@ export default function AdminProducts() {
                 <td className="py-3 px-5">
                   {formatPrice(p.price)}{p.originalPrice > p.price ? <span className="text-brand-muted text-[12px] line-through ml-1">{formatPrice(p.originalPrice)}</span> : ''}
                 </td>
-                <td className="py-3 px-5">{p.stock}</td>
+                <td className="py-3 px-5">
+                  <div className="flex items-center gap-2">
+                    <span className={p.stock === 0 ? 'text-[#8a3f3f]' : p.stock <= 5 ? 'text-[#8a6d3f]' : ''}>{p.stock}</span>
+                    {p.stock === 0 && (
+                      <span className="inline-flex items-center bg-[#8a3f3f]/10 text-[#8a3f3f] text-[10px] font-[700] uppercase px-1.5 py-0.5">Out of Stock</span>
+                    )}
+                    {p.stock > 0 && p.stock <= 5 && (
+                      <span className="inline-flex items-center bg-[#8a6d3f]/10 text-[#8a6d3f] text-[10px] font-[700] uppercase px-1.5 py-0.5">Low Stock</span>
+                    )}
+                  </div>
+                </td>
                 <td className="py-3 px-5">
                   <div className="flex gap-2">
                     <button onClick={() => openModal(p)} className="bg-transparent border border-brand-border text-brand-text px-3 py-1.5 text-[11px] font-[700] hover:bg-black/8 transition-colors cursor-pointer">Edit</button>
