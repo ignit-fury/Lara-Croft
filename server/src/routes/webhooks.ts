@@ -36,6 +36,18 @@ router.post('/razorpay', express.raw({ type: 'application/json' }), async (req: 
 
   try {
     switch (event.event) {
+      case 'payment.authorized': {
+        const payment = event.payload.payment.entity;
+        const order = await findOne('orders', { razorpay_order_id: payment.order_id });
+        if (order && order.payment_status === 'pending') {
+          console.log(`[WEBHOOK] Payment authorized for order ${order.id}`);
+          await updateOne('orders', order.id, {
+            status: 'authorized',
+            razorpay_payment_id: payment.id,
+          });
+        }
+        break;
+      }
       case 'payment.captured': {
         const payment = event.payload.payment.entity;
         const order = await findOne('orders', { razorpay_order_id: payment.order_id });
