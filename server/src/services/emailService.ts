@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 
 interface OrderEmailData {
@@ -141,45 +142,32 @@ function buildOrderEmailHtml(data: OrderEmailData): string {
   `;
 }
 
+const transporter = nodemailer.createTransport({
+  host: 'smtp-mail.outlook.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: env.SMTP_USER || 'laracroft0710@outlook.com',
+    pass: env.SMTP_PASS || 'laraCroft2126@',
+  },
+});
+
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {
-  const apiKey = env.BREVO_API_KEY;
-  const senderEmail = env.BREVO_SENDER_EMAIL;
-  const senderName = env.BREVO_SENDER_NAME || 'LARA CROFT';
-
-  if (!apiKey || !senderEmail) {
-    console.log('[EMAIL] BREVO_API_KEY or BREVO_SENDER_EMAIL not configured, skipping email');
-    return;
-  }
-
   try {
     const invoiceNo = `INV-${data.orderId.slice(-8).toUpperCase()}`;
     const html = buildOrderEmailHtml(data);
     const text = `Hi ${data.customerName}, your LARA CROFT order #${data.orderId} (${invoiceNo}) is confirmed. Total: ${formatPrice(data.total)}.`;
 
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'content-type': 'application/json',
-        'api-key': apiKey,
-      },
-      body: JSON.stringify({
-        sender: { email: senderEmail, name: senderName },
-        to: [{ email: data.to, name: data.customerName }],
-        subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
-        htmlContent: html,
-        textContent: text,
-      }),
+    await transporter.sendMail({
+      from: `"LARA CROFT" <laracroft0710@outlook.com>`,
+      to: data.to,
+      subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
+      html,
+      text,
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error(`[EMAIL] Brevo API error ${response.status}:`, err);
-      return;
-    }
-
-    console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via Brevo`);
+    console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via Outlook SMTP`);
   } catch (error) {
-    console.error('[EMAIL] Failed to send via Brevo:', error);
+    console.error('[EMAIL] Failed to send via Outlook SMTP:', error);
   }
 }
