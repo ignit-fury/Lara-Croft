@@ -3,5 +3,5 @@ packages:
   - server
 
 allowBuilds:
-  bcrypt: set this to true or false
-  esbuild: set this to true or false
+  bcrypt: true
+  esbuild: true
