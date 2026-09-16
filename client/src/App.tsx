@@ -10,6 +10,7 @@ import CategoryPage from './pages/CategoryPage';
 import CollectionPage from './pages/Collection';
 import SalePage from './pages/Sale';
 import About from './pages/About';
+import Contact from './pages/Contact';
 import Checkout from './pages/Checkout';
 import CheckoutSuccess from './pages/CheckoutSuccess';
 import Account from './pages/Account';
@@ -48,6 +49,7 @@ function App() {
           <Route path="/collection" element={<CollectionPage />} />
           <Route path="/sale" element={<SalePage />} />
           <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/product/:slug" element={<ProductDetail />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route element={<ProtectedRoute />}>
