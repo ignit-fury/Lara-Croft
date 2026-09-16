@@ -21,6 +21,7 @@ import AdminUsers from './pages/admin/Users';
 import AdminLogin from './pages/admin/AdminLogin';
 import CustomerAuth from './pages/CustomerAuth';
 import Health from './pages/Health';
+import NotFound from './pages/NotFound';
 import { useAuth } from './hooks/useAuth';
 import { useCartStore } from './stores/useCartStore';
 import { useUserStore } from './stores/useUserStore';
@@ -56,6 +57,7 @@ function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
             <Route path="/account" element={<Account />} />
+          <Route path="*" element={<NotFound />} />
           </Route>
         </Route>
         <Route path="/admin/login" element={<AdminLogin />} />
