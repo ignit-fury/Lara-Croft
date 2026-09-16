@@ -148,7 +148,7 @@ const transporter = nodemailer.createTransport({
   secure: false,
   auth: {
     user: env.SMTP_USER || 'laracroft0710@outlook.com',
-    pass: env.SMTP_PASS || 'laraCroft2126@',
+    pass: env.SMTP_PASS || 'jcyrinzlpynaxdnx',
   },
 });
 
