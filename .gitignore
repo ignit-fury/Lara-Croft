@@ -12,3 +12,6 @@ client_secret_*.json
 *.temp
 .vercel
 .env*
+*.tgz
+test-results/
+*.new
