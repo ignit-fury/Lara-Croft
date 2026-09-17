@@ -71,8 +71,13 @@ app.use(logger);
 // Webhook route needs raw body - mount BEFORE JSON parser
 app.use('/api/webhooks', webhookRoutes);
 
-// Body parsing with size limits
-app.use(express.json({ limit: '10mb' }));
+// Body parsing with size limits + raw body capture for error logging
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, _res, buf) => {
+    (req as any)._rawBodyPreview = buf.toString('utf8').slice(0, 500);
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rate limiting
