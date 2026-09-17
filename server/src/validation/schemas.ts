@@ -58,7 +58,7 @@ export const removeFromCartSchema = z.object({
 
 // Orders
 export const createCheckoutSessionSchema = z.object({
-  address: addAddressSchema,
+  shippingAddress: addAddressSchema,
 });
 
 export const confirmOrderSchema = z.object({

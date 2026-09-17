@@ -9,7 +9,7 @@ const router = Router();
 router.get('/', authenticate, getCart);
 router.post('/add', authenticate, validate(addToCartSchema), addToCart);
 router.put('/update', authenticate, validate(updateCartItemSchema), updateCartItem);
-router.delete('/remove', authenticate, validate(removeFromCartSchema), removeFromCart);
+router.delete('/remove', authenticate, removeFromCart);
 router.delete('/clear', authenticate, clearCart);
 
 export default router;
