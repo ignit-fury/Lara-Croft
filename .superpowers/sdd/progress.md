@@ -1,9 +1,9 @@
 # Progress Ledger
 
 ## Current State
-- **Status:** ALL 23 TASKS COMPLETE
-- **Commits:** 22
-- **Files:** 51 TS/TSX files
+- **Status:** ALL 29 TASKS COMPLETE
+- **Commits:** 28+
+- **Files:** 55+ TS/TSX files
 
 ## Completed Tasks
 | # | Task | Commit | Status |
@@ -30,6 +30,12 @@
 | 20 | Admin Dashboard | fa9d7f0 | ✅ |
 | 21-22 | Admin Orders + Account + Routes | — | ✅ |
 | 23 | Integration Test | — | ✅ |
+| 24 | Update SMTP sender to laracroft0710@outlook.com | 7641d00 | ✅ |
+| 25 | Invoice notification on checkout success | 94e7fd1 | ✅ |
+| 26 | Out-of-stock + inventory display + low stock warnings | 946069e | ✅ |
+| 27 | Contact Us page | 94e7fd1 | ✅ |
+| 28 | 404 NotFound page | 453b7ac | ✅ |
+| 29 | Replace emoji icons with lucide-react | eb0b042 | ✅ |
 
 ## Build Status
 - **Client (Vite):** ✅ Pass

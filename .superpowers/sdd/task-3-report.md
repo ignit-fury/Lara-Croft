@@ -1,33 +1,19 @@
-# Task 3: Backend Config Files
+# Task 3 Report: Add payment.authorized Event Handling
 
-**Status:** ✅ Done
+## Status: DONE
 
-## Created Files
+## What was done
+- Added `payment.authorized` case to `server/src/routes/webhooks.ts` before `payment.captured` case
+- Updates order status to `'authorized'` when order payment_status is still `'pending'`
+- Stores `razorpay_payment_id` for reference
+- Skips idempotent orders (already authorized/paid)
+- No email or cart clearing — those remain on `payment.captured`
 
-| File | Purpose |
-|------|---------|
-| `server/src/config/env.ts` | Zod env validation (all vars required with types) |
-| `server/src/config/db.ts` | Mongoose connectDB() with error handling |
-| `server/src/config/supabase.ts` | Supabase client (service role) |
-| `server/src/config/razorpay.ts` | Razorpay instance |
+## Test results
+TypeScript compilation passed with no errors (`npx tsc --noEmit`).
 
-## Updated Files
+## Commits
+- `77418f1` — feat: add payment.authorized webhook handler
 
-| File | Change |
-|------|--------|
-| `server/src/index.ts` | Added `connectDB()` import; server starts only after DB connects |
-
-## Env Vars Required
-
-```
-MONGODB_URI
-SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET
-RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET
-```
-
-## Dependencies Used
-
-- `zod` (env validation)
-- `mongoose` (MongoDB)
-- `@supabase/supabase-js` (auth/storage)
-- `razorpay` (payments)
+## Concerns
+None. Implementation matches brief exactly.

@@ -36,6 +36,7 @@ export default function Header() {
             <Link to="/collection" className="text-brand-muted text-[13px] font-medium uppercase tracking-[1px] hover:text-brand-text transition-colors">Collection</Link>
             <Link to="/sale" className="text-brand-muted text-[13px] font-medium uppercase tracking-[1px] hover:text-brand-text transition-colors">Sale</Link>
             <Link to="/about" className="text-brand-muted text-[13px] font-medium uppercase tracking-[1px] hover:text-brand-text transition-colors">About</Link>
+            <Link to="/contact" className="text-brand-muted text-[13px] font-medium uppercase tracking-[1px] hover:text-brand-text transition-colors">Contact</Link>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -77,6 +78,7 @@ export default function Header() {
           <Link to="/collection" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Collection</Link>
           <Link to="/sale" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Sale</Link>
           <Link to="/about" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">About</Link>
+          <Link to="/contact" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Contact</Link>
           {user ? (
             <>
               <Link to="/account" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px]">Account</Link>

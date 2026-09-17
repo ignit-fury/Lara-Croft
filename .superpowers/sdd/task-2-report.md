@@ -1,22 +1,18 @@
-# Task 2 Report: Shared TypeScript Types
+# Task 2 Report: Make confirmOrder Idempotent
 
-## Status
-✅ Complete
+## Status: DONE
 
-## Commit
-`d418331` — `feat: add shared TypeScript types`
+## Changes Made
+Added guard to cart clearing in `server/src/controllers/orderController.ts:132` — checks `cart.items` exists and has length > 0 before calling `updateOne`. Prevents redundant DB write when webhook and frontend handler both fire.
 
-## File Created
-`client/src/types/index.ts` (101 lines)
+## Email duplicate prevention
+Verified: early return at line 104 (`payment_status === 'paid'`) already prevents duplicate emails and order updates on second call.
 
-## Interfaces Defined
-- **Product** — Product catalog with images, sizes, stock
-- **Category** — Product categories with ordering
-- **User** — Auth user with roles, addresses, preferences
-- **Address** — Shipping/billing address
-- **CartItem** — Cart line item
-- **Order** — Full order with Razorpay integration
-- **OrderItem** — Order line item
-- **OrderStatus** — 7-state order flow
-- **PaymentStatus** — 4-state payment flow
-- **ApiResponse\<T\>** — Generic API response with pagination
+## Commits
+- `43fd059` — `fix: skip cart clearing if already empty (idempotent confirmOrder)`
+
+## Test Results
+`tsc --noEmit` — clean, zero errors.
+
+## Concerns
+None.

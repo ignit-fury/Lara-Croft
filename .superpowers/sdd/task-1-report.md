@@ -1,23 +1,29 @@
-# Task 1 Report — Monorepo Scaffold
+# Task 1 Report: Make Webhook Handler Idempotent
 
-**Status:** DONE
+## Status: DONE
 
-## What Was Created
+## Commit
+`a49352e` — Make webhook handler idempotent to prevent duplicate processing
 
-- **Root:** `package.json` with npm workspaces (`client`, `server`), `concurrently` for parallel dev, `.gitignore`
-- **Client:** Vite React TypeScript app with Tailwind CSS v4, axios, @tanstack/react-query, zustand, react-router-dom, @supabase/supabase-js, razorpay, react-hot-toast
-- **Server:** Express TypeScript app with cors, helmet, dotenv, mongoose, morgan, express-rate-limit. Directory structure: `src/{config,middleware,models,routes,controllers,services,utils}`. Health endpoint at `GET /api/health`
+## What Changed
 
-## Commits
+### 1. `payment.captured` — skip if already paid
+Before updating order, checks `order.payment_status === 'paid'`. If true, logs skip and jumps to cart clearing. Prevents duplicate emails and redundant DB writes when frontend handler already confirmed.
 
-- `988546a` — `chore: scaffold monorepo with Express + Vite React TS`
+### 2. Cart clearing — skip if already empty
+Before `updateOne('cart', ...)`, checks `cart.items.length > 0`. If cart is already cleared, skips the write entirely.
 
-## Verification
+### 3. `payment.failed` — skip if already failed
+Added guard: `order.payment_status !== 'failed'` before updating. Prevents redundant DB writes if webhook fires multiple times.
 
-- Server starts successfully on port 3001 (confirmed via `npm run dev`)
-- `.env` excluded from git via `.gitignore`
+### 4. Email prevention
+Email only sends inside the `else` block (when `payment_status !== 'paid'`), so it never fires if the order was already confirmed by the frontend handler.
+
+## Compile Check
+```
+npx tsc --noEmit
+```
+Clean — zero errors.
 
 ## Concerns
-
-- `.env` contains placeholder credentials — needs real values before running Supabase/Mongoose/Razorpay integrations
-- No server entry point guards (e.g., `connectDB()` before `app.listen`) — fine for now, needed before DB work
+None. All four requirements met exactly as specified in the brief.
