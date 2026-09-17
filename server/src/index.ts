@@ -25,15 +25,23 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://checkout.razorpay.com", "https://js.sentry-cdn.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://*.supabase.co", "https://*.onrender.com", "https://*.vercel.app"],
+      connectSrc: ["'self'", "https://*.supabase.co", "https://*.sentry.io", "https://*.trycloudflare.com", "https://*.vercel.app"],
+      frameSrc: ["'self'", "https://checkout.razorpay.com"],
     },
   },
   crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: "same-origin" },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
+
+app.use((_req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self)');
+  next();
+});
 
 // CORS
 const frontendUrl = (env.FRONTEND_URL || '').replace(/\/+$/, '');
