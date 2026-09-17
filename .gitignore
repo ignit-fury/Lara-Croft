@@ -15,3 +15,7 @@ client_secret_*.json
 *.tgz
 test-results/
 *.new
+
+# Graphify
+graphify-out/
+.planning/
