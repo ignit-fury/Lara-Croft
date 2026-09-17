@@ -5,7 +5,7 @@ import './index.css'
 import App from './App.tsx'
 
 Sentry.init({
-  dsn: "https://de6831f720428a01babf724ba8d817ed@o4512101252988928.ingest.us.sentry.io/4512101276516352",
+  dsn: "https://aa0d5a6953c8a5935bd6016ee463cf51@o4512101252988928.ingest.us.sentry.io/4512101311119360",
   integrations: [
     Sentry.browserTracingIntegration(),
   ],
