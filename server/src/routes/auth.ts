@@ -4,7 +4,7 @@ import { adminLogin } from '../controllers/adminAuthController';
 import { customerSignup, customerLogin } from '../controllers/customerAuthController';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { syncUserSchema, adminLoginSchema, customerSignupSchema, customerLoginSchema, updateProfileSchema, addAddressSchema } from '../validation/schemas';
+import { syncUserSchema, adminLoginSchema, customerSignupSchema, customerLoginSchema, updateProfileSchema, addressSchema, normalizeAddress } from '../validation/schemas';
 
 const router = Router();
 
@@ -15,7 +15,7 @@ router.post('/login', validate(customerLoginSchema), customerLogin);
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, validate(updateProfileSchema), updateProfile);
 router.get('/addresses', authenticate, getAddresses);
-router.post('/addresses', authenticate, validate(addAddressSchema), addAddress);
+router.post('/addresses', authenticate, validate(addressSchema, { normalize: normalizeAddress, stage: 'address' }), addAddress);
 router.delete('/addresses/:index', authenticate, deleteAddress);
 
 export default router;
