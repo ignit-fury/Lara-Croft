@@ -6,8 +6,8 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
   try {
     const { search, category, minPrice, maxPrice, size, sort, onSale, page = '1', limit = '12' } = req.query;
 
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    const pageNum = Math.min(Math.max(parseInt(page as string) || 1, 1), 100);
+    const limitNum = Math.min(Math.max(parseInt(limit as string) || 12, 1), 100);
     const from = (pageNum - 1) * limitNum;
     const to = from + limitNum - 1;
 
@@ -16,7 +16,10 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
       .select('*, categories!inner(id, name, slug)', { count: 'exact' });
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+      const safeSearch = (search as string).replace(/[^a-zA-Z0-9\s]/g, '');
+      if (safeSearch) {
+        query = query.or(`name.ilike.%${safeSearch}%,description.ilike.%${safeSearch}%`);
+      }
     }
     if (category) {
       const cat = await findOne('categories', { slug: category as string });
