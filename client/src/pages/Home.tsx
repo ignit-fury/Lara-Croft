@@ -148,16 +148,6 @@ export default function Home() {
           </button>
         </form>
       </section>
-
-      {/* Sentry Test Button - remove after testing */}
-      <section className="py-8 px-6 text-center border-t border-brand-border">
-        <button
-          onClick={() => { throw new Error('This is your first error!'); }}
-          className="bg-red-600 text-white px-6 py-3 text-sm font-bold uppercase tracking-wide hover:bg-red-700 transition-colors"
-        >
-          Break the world
-        </button>
-      </section>
     </div>
   );
 }
