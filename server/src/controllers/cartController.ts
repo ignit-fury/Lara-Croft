@@ -57,8 +57,19 @@ export async function addToCart(req: AuthRequest, res: Response): Promise<void> 
       (item: any) => item.product_id === productId && item.size === size
     );
 
+    const currentQty = existingIndex >= 0 ? items[existingIndex].quantity : 0;
+    const newTotal = currentQty + quantity;
+
+    if (product.stock != null && product.stock > 0 && newTotal > product.stock) {
+      res.status(400).json({
+        success: false,
+        error: `Only ${product.stock} available. You already have ${currentQty} in cart.`,
+      });
+      return;
+    }
+
     if (existingIndex >= 0) {
-      items[existingIndex].quantity += quantity;
+      items[existingIndex].quantity = newTotal;
     } else {
       items.push({ product_id: productId, size, quantity });
     }
@@ -90,6 +101,17 @@ export async function updateCartItem(req: AuthRequest, res: Response): Promise<v
     if (idx < 0) {
       res.status(404).json({ success: false, error: 'Item not in cart' });
       return;
+    }
+
+    if (quantity > 0) {
+      const product = await findOne('products', { id: productId });
+      if (product?.stock != null && product.stock > 0 && quantity > product.stock) {
+        res.status(400).json({
+          success: false,
+          error: `Only ${product.stock} available in stock.`,
+        });
+        return;
+      }
     }
 
     items[idx].quantity = quantity;

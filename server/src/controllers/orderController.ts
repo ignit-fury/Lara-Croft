@@ -34,10 +34,25 @@ export async function createCheckoutSession(req: AuthRequest, res: Response): Pr
     const productIds = cart.items.map((item: any) => item.product_id);
     const { data: products } = await supabase
       .from('products')
-      .select('id, name, price, images')
+      .select('id, name, price, images, stock')
       .in('id', productIds);
 
     const productMap = new Map((products || []).map((p: any) => [p.id, p]));
+
+    // Check stock before creating order
+    for (const item of cart.items) {
+      const product = productMap.get(item.product_id);
+      if (!product) {
+        throw new Error(`Product ${item.product_id} not found in catalog (deleted or invalid)`);
+      }
+      if (product.stock != null && product.stock > 0 && item.quantity > product.stock) {
+        res.status(400).json({
+          success: false,
+          error: `"${product.name}" has only ${product.stock} left in stock. Please update your cart.`,
+        });
+        return;
+      }
+    }
 
     const items = cart.items.map((item: any) => {
       const product = productMap.get(item.product_id);

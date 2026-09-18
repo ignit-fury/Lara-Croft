@@ -30,6 +30,8 @@ export default function ProductDetail() {
     });
   }, [slug]);
 
+  const maxQty = product.stock > 0 ? product.stock : 1;
+
   const handleAddToCart = async () => {
     if (!user) {
       toast.error('Please sign in to add items to cart');
@@ -124,7 +126,7 @@ export default function ProductDetail() {
             <div className="flex items-center border border-brand-border w-fit">
               <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-2 text-brand-muted hover:text-brand-text hover:bg-brand-card transition-colors"><Minus size={16} /></button>
               <span className="px-4 py-2 text-[13px] font-semibold min-w-[40px] text-center text-brand-text">{quantity}</span>
-              <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-2 text-brand-muted hover:text-brand-text hover:bg-brand-card transition-colors"><Plus size={16} /></button>
+              <button onClick={() => setQuantity(Math.min(maxQty, quantity + 1))} className="px-3 py-2 text-brand-muted hover:text-brand-text hover:bg-brand-card transition-colors"><Plus size={16} /></button>
             </div>
           </div>
 
