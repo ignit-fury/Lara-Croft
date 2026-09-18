@@ -20,7 +20,8 @@ import uploadRoutes from './routes/upload';
 const app = express();
 app.set('trust proxy', 1);
 
-// Security headers
+// Security headers — X-Frame-Options disabled so Razorpay 3D Secure iframe works;
+// CSP frame-src controls allowed framing instead.
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -30,12 +31,13 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: ["'self'", "https://*.supabase.co", "https://*.sentry.io", "https://*.trycloudflare.com", "https://*.vercel.app"],
-      frameSrc: ["'self'", "https://checkout.razorpay.com"],
+      frameSrc: ["'self'", "https://checkout.razorpay.com", "https://*.razorpay.com"],
     },
   },
   crossOriginEmbedderPolicy: false,
   crossOriginOpenerPolicy: { policy: "same-origin" },
   crossOriginResourcePolicy: { policy: "cross-origin" },
+  frameguard: false,
 }));
 
 app.use((_req, res, next) => {
