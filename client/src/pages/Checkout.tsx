@@ -74,6 +74,16 @@ export default function Checkout() {
 
   const loadRazorpay = () => {
     return new Promise<boolean>((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(true));
+        existing.addEventListener('error', () => resolve(false));
+        return;
+      }
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = () => resolve(true);
