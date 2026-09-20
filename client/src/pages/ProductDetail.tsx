@@ -30,8 +30,6 @@ export default function ProductDetail() {
     });
   }, [slug]);
 
-  const maxQty = product.stock > 0 ? product.stock : 1;
-
   const handleAddToCart = async () => {
     if (!user) {
       toast.error('Please sign in to add items to cart');
@@ -57,6 +55,8 @@ export default function ProductDetail() {
   if (loading || !product) {
     return <div className="max-w-7xl mx-auto px-4 py-12 text-center text-brand-muted">Loading...</div>;
   }
+
+  const maxQty = product.stock > 0 ? product.stock : 1;
 
   const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
 

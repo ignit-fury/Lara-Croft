@@ -26,16 +26,16 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://checkout.razorpay.com", "https://js.sentry-cdn.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://checkout.razorpay.com", "https://*.razorpay.com", "https://js.sentry-cdn.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://*.supabase.co", "https://*.sentry.io", "https://*.trycloudflare.com", "https://*.vercel.app"],
+      connectSrc: ["'self'", "https://*.supabase.co", "https://*.sentry.io", "https://*.trycloudflare.com", "https://*.vercel.app", "https://*.razorpay.com", "https://api.razorpay.com"],
       frameSrc: ["'self'", "https://checkout.razorpay.com", "https://*.razorpay.com"],
     },
   },
   crossOriginEmbedderPolicy: false,
-  crossOriginOpenerPolicy: { policy: "same-origin" },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
   crossOriginResourcePolicy: { policy: "cross-origin" },
   frameguard: false,
 }));
