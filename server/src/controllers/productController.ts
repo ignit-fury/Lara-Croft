@@ -95,6 +95,34 @@ export async function getFeaturedProducts(req: Request, res: Response): Promise<
   }
 }
 
+export async function getRelatedProducts(req: Request, res: Response): Promise<void> {
+  try {
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('id, category_id')
+      .eq('slug', req.params.slug as string)
+      .single();
+
+    if (fetchError || !product) {
+      res.status(404).json({ success: false, error: 'Product not found' });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, categories!inner(id, name, slug)')
+      .eq('category_id', product.category_id)
+      .neq('id', product.id)
+      .order('created_at', { ascending: false })
+      .limit(8);
+
+    if (error) throw error;
+    res.json({ success: true, data: normalize(data) || [] });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 export async function getCategories(_req: Request, res: Response): Promise<void> {
   try {
     const { data, error } = await supabase

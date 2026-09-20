@@ -1,18 +1,35 @@
-# Task 2 Report: Make confirmOrder Idempotent
+# Task 2: Wishlist / Save for Later — Report
 
-## Status: DONE
+## Status: ✅ Complete
 
-## Changes Made
-Added guard to cart clearing in `server/src/controllers/orderController.ts:132` — checks `cart.items` exists and has length > 0 before calling `updateOne`. Prevents redundant DB write when webhook and frontend handler both fire.
+All files created/modified, server and client build cleanly (`npx tsc` and `vite build`).
 
-## Email duplicate prevention
-Verified: early return at line 104 (`payment_status === 'paid'`) already prevents duplicate emails and order updates on second call.
+## Files Created
+- `server/src/controllers/wishlistController.ts` — 4 endpoints: getWishlist, addToWishlist, removeFromWishlist, isInWishlist
+- `server/src/routes/wishlist.ts` — Express router with authenticate middleware on all routes
+- `client/src/stores/useWishlistStore.ts` — Zustand store with items, ids (Set), fetchWishlist, toggleWishlist, isInWishlist
+- `client/src/pages/Wishlist.tsx` — Grid page with empty state and guest prompt
 
-## Commits
-- `43fd059` — `fix: skip cart clearing if already empty (idempotent confirmOrder)`
+## Files Modified
+- `server/src/index.ts` — Mounted `app.use('/api/wishlist', wishlistRoutes)` after upload routes
+- `client/src/App.tsx` — Added `/wishlist` route (inside Layout, not protected), fetchWishlist on user login
+- `client/src/components/product/ProductCard.tsx` — Heart icon (top-right) using lucide-react `Heart`, filled when in wishlist, only shown for logged-in users, stops event propagation
+- `client/src/components/layout/Header.tsx` — Heart icon link to `/wishlist` with badge count, mobile menu link
 
-## Test Results
-`tsc --noEmit` — clean, zero errors.
+## Design Decisions
+- **Wishlist stored as JSONB array on users table** — no schema migration needed; gracefully treats missing/null column as empty array
+- **Toggle pattern** — `toggleWishlist` checks `ids` Set, calls POST or DELETE, then re-fetches full list with product objects
+- **Heart icon only visible to logged-in users** — consistent with auth requirement
+- **Wishlist page not protected** — shows login prompt for guests, per brief
 
-## Concerns
-None.
+## API Endpoints
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/wishlist` | Yes | Returns user's wishlist with full product objects |
+| POST | `/api/wishlist/:productId` | Yes | Adds product ID to wishlist |
+| DELETE | `/api/wishlist/:productId` | Yes | Removes product ID from wishlist |
+| GET | `/api/wishlist/check/:productId` | Yes | Returns `{ inWishlist: boolean }` |
+
+## Build Verification
+- Server: `npx tsc --noEmit` — clean, no errors
+- Client: `npx vite build` — builds successfully

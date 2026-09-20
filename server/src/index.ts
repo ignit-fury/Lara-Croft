@@ -16,6 +16,7 @@ import orderRoutes from './routes/orders';
 import webhookRoutes from './routes/webhooks';
 import adminRoutes from './routes/admin';
 import uploadRoutes from './routes/upload';
+import wishlistRoutes from './routes/wishlist';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -94,6 +95,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 // Health check — includes DB ping for UptimeRobot
 app.get('/api/health', async (_req: express.Request, res: express.Response) => {

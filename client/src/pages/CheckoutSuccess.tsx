@@ -1,6 +1,18 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../services/api';
+import ProductCard from '../components/product/ProductCard';
+import type { Product } from '../types';
 
 export default function CheckoutSuccess() {
+  const [featured, setFeatured] = useState<Product[]>([]);
+
+  useEffect(() => {
+    api.get('/products/featured').then((res) => {
+      setFeatured(res.data.data.slice(0, 4));
+    });
+  }, []);
+
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-16 text-center">
       <div className="max-w-md mx-auto">
@@ -20,6 +32,17 @@ export default function CheckoutSuccess() {
           </Link>
         </div>
       </div>
+
+      {featured.length > 0 && (
+        <div className="mt-16">
+          <h2 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-6">You May Also Like</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {featured.map((item) => (
+              <ProductCard key={item.id} product={item} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

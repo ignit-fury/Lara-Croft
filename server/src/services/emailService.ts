@@ -1,5 +1,6 @@
 import { env } from '../config/env';
 import nodemailer from 'nodemailer';
+import { generateInvoicePdf, InvoiceData } from './invoicePdf';
 
 // Lazy SMTP transporter — only created when SMTP fallback is needed
 let smtpTransporter: any = null;
@@ -164,6 +165,14 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
     const invoiceNo = `INV-${data.orderId.slice(-8).toUpperCase()}`;
     const html = buildOrderEmailHtml(data);
 
+    let pdfBuffer: Buffer | null = null;
+    try {
+      const invoiceData: InvoiceData = { ...data, invoiceNo, orderId: data.orderId };
+      pdfBuffer = await generateInvoicePdf(invoiceData);
+    } catch (pdfError) {
+      console.error('[EMAIL] Failed to generate invoice PDF, continuing without attachment:', pdfError);
+    }
+
     const apiKey = env.BREVO_API_KEY;
     const senderEmail = env.BREVO_SENDER_EMAIL || 'laracroft0710@outlook.com';
     const senderName = env.BREVO_SENDER_NAME || 'LARA CROFT';
@@ -175,6 +184,18 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
         try {
+          const bodyPayload: any = {
+            sender: { email: senderEmail, name: senderName },
+            to: [{ email: data.to, name: data.customerName }],
+            subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
+            htmlContent: html,
+          };
+          if (pdfBuffer) {
+            bodyPayload.attachment = [{
+              content: pdfBuffer.toString('base64'),
+              name: `invoice-${invoiceNo}.pdf`,
+            }];
+          }
           const response = await fetch('https://api.brevo.com/v3/smtp/email', {
             method: 'POST',
             signal: controller.signal,
@@ -182,12 +203,7 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
               'Content-Type': 'application/json',
               'api-key': apiKey,
             },
-            body: JSON.stringify({
-              sender: { email: senderEmail, name: senderName },
-              to: [{ email: data.to, name: data.customerName }],
-              subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
-              htmlContent: html,
-            }),
+            body: JSON.stringify(bodyPayload),
           });
           clearTimeout(timeout);
 
@@ -216,12 +232,18 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
     // SMTP fallback
     try {
       const transporter = getSmtpTransporter();
-      const mailOptions = {
+      const mailOptions: any = {
         from: env.SMTP_FROM || 'LARA CROFT <laracroft0710@outlook.com>',
         to: data.to,
         subject: `Order Confirmed #${data.orderId} \u2014 Invoice ${invoiceNo}`,
         html: html,
       };
+      if (pdfBuffer) {
+        mailOptions.attachments = [{
+          filename: `invoice-${invoiceNo}.pdf`,
+          content: pdfBuffer,
+        }];
+      }
       const info = await transporter.sendMail(mailOptions);
       console.log(`[EMAIL] Order confirmation + invoice sent to ${data.to} via SMTP (${info.messageId})`);
     } catch (smtpError) {

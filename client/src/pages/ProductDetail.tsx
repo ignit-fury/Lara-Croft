@@ -6,6 +6,7 @@ import { useUserStore } from '../stores/useUserStore';
 import toast from 'react-hot-toast';
 import { Minus, Plus } from 'lucide-react';
 import type { Product } from '../types';
+import ProductCard from '../components/product/ProductCard';
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
@@ -18,6 +19,7 @@ export default function ProductDetail() {
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [related, setRelated] = useState<Product[]>([]);
   const { addItem } = useCartStore();
   const { user } = useUserStore();
   const [adding, setAdding] = useState(false);
@@ -27,6 +29,9 @@ export default function ProductDetail() {
       setProduct(res.data.data);
       if (res.data.data.sizes?.length) setSelectedSize(res.data.data.sizes[0]);
       setLoading(false);
+    });
+    api.get(`/products/${slug}/related`).then((res) => {
+      setRelated(res.data.data);
     });
   }, [slug]);
 
@@ -159,6 +164,17 @@ export default function ProductDetail() {
           )}
         </div>
       </div>
+
+      {related.length > 0 && (
+        <div className="mt-16">
+          <h2 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-6">You May Also Like</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {related.map((item) => (
+              <ProductCard key={item.id} product={item} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

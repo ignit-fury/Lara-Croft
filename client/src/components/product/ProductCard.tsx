@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
+import { Heart } from 'lucide-react';
 import type { Product } from '../../types';
+import { useWishlistStore } from '../../stores/useWishlistStore';
+import { useUserStore } from '../../stores/useUserStore';
 
 interface ProductCardProps {
   product: Product;
@@ -11,6 +14,15 @@ function formatPrice(paise: number): string {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+  const { user } = useUserStore();
+  const { isInWishlist, toggleWishlist } = useWishlistStore();
+  const inWishlist = isInWishlist(product.id);
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (user?.id) toggleWishlist(product.id);
+  };
 
   return (
     <Link to={`/product/${product.slug}`} className="group block">
@@ -20,13 +32,19 @@ export default function ProductCard({ product }: ProductCardProps) {
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500"
         />
-        {/* Sale badge */}
+        {user?.id && (
+          <button
+            onClick={handleToggle}
+            className="absolute top-3 right-3 z-10 p-1.5 bg-white/8 backdrop-blur-md rounded-full hover:bg-white/20 transition-colors"
+          >
+            <Heart size={16} className={inWishlist ? 'fill-red-500 text-red-500' : 'text-white/80'} />
+          </button>
+        )}
         {discount > 0 && (
           <span className="absolute top-3 left-3 bg-brand-accent text-brand-cream py-1 px-3 text-[10px] font-bold uppercase tracking-[1px] z-10">
             Sale<span className="opacity-70 ml-0.5">{discount}% OFF</span>
           </span>
         )}
-        {/* Quick View */}
         <button className="absolute bottom-3 left-1/2 -translate-x-1/2 translate-y-2 bg-white/8 backdrop-blur-md text-white border border-white/18 py-2 px-5 text-[11px] font-semibold uppercase tracking-[1px] opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 whitespace-nowrap">
           Quick View
         </button>

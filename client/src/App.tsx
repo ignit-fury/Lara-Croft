@@ -22,19 +22,25 @@ import AdminLogin from './pages/admin/AdminLogin';
 import CustomerAuth from './pages/CustomerAuth';
 import Health from './pages/Health';
 import NotFound from './pages/NotFound';
+import Wishlist from './pages/Wishlist';
 import { useAuth } from './hooks/useAuth';
 import { useCartStore } from './stores/useCartStore';
 import { useUserStore } from './stores/useUserStore';
+import { useWishlistStore } from './stores/useWishlistStore';
 import { useEffect } from 'react';
 
 function App() {
   const { loading } = useAuth();
   const { user } = useUserStore();
   const { fetchCart } = useCartStore();
+  const { fetchWishlist } = useWishlistStore();
 
   useEffect(() => {
-    if (user?.id) fetchCart();
-  }, [user?.id, fetchCart]);
+    if (user?.id) {
+      fetchCart();
+      fetchWishlist();
+    }
+  }, [user?.id, fetchCart, fetchWishlist]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-brand-muted" style={{ background: '#ffffff' }}>Loading...</div>;
@@ -53,6 +59,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/product/:slug" element={<ProductDetail />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
+          <Route path="/wishlist" element={<Wishlist />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />

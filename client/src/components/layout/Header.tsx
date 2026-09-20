@@ -1,14 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserStore } from '../../stores/useUserStore';
 import { useCartStore } from '../../stores/useCartStore';
+import { useWishlistStore } from '../../stores/useWishlistStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useState } from 'react';
-import { ShoppingCart, User, Menu, X } from 'lucide-react';
+import { ShoppingCart, Heart, User, Menu, X } from 'lucide-react';
 import CartDrawer from '../../pages/Cart';
 
 export default function Header() {
   const { user } = useUserStore();
   const { items } = useCartStore();
+  const { items: wishlistItems } = useWishlistStore();
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -40,6 +42,15 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-4">
+            <Link to="/wishlist" className="relative text-brand-muted hover:text-brand-text transition-colors text-lg">
+              <Heart size={20} />
+              {wishlistItems.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-brand-accent text-brand-cream text-[10px] font-bold w-[18px] h-[18px] rounded-full flex items-center justify-center">
+                  {wishlistItems.length}
+                </span>
+              )}
+            </Link>
+
             <button onClick={() => setCartOpen(true)} className="relative text-brand-muted hover:text-brand-text transition-colors text-lg">
               <ShoppingCart size={20} />
               {itemCount > 0 && (
@@ -77,6 +88,7 @@ export default function Header() {
           <Link to="/" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Shop</Link>
           <Link to="/collection" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Collection</Link>
           <Link to="/sale" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Sale</Link>
+          <Link to="/wishlist" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Wishlist</Link>
           <Link to="/about" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">About</Link>
           <Link to="/contact" onClick={() => setMobileOpen(false)} className="text-brand-text text-[28px] font-bold uppercase tracking-[2px] hover:text-brand-accent transition-colors">Contact</Link>
           {user ? (

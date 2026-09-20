@@ -139,6 +139,25 @@ export async function confirmOrder(req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
+    // Decrement stock for each product before marking as paid
+    const stockUpdates: Promise<any>[] = [];
+    for (const item of order.items) {
+      const product = await findOne('products', { id: item.product_id });
+      if (!product) continue;
+
+      const newStock = Math.max(0, (product.stock || 0) - item.quantity);
+      const updates: Record<string, any> = { stock: newStock };
+
+      if (item.size && product.stock_by_size && typeof product.stock_by_size === 'object') {
+        const currentSizeStock = product.stock_by_size[item.size] ?? 0;
+        const newSizeStock = Math.max(0, currentSizeStock - item.quantity);
+        updates.stock_by_size = { ...product.stock_by_size, [item.size]: newSizeStock };
+      }
+
+      stockUpdates.push(updateOne('products', product.id, updates));
+    }
+    await Promise.all(stockUpdates);
+
     const updatedOrder = await updateOne('orders', order.id, {
       payment_status: 'paid',
       status: 'confirmed',
