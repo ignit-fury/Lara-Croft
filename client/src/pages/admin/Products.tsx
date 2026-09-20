@@ -4,10 +4,7 @@ import api from '../../services/api';
 import { useUserStore } from '../../stores/useUserStore';
 import toast from 'react-hot-toast';
 import { Star } from 'lucide-react';
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toLocaleString('en-IN')}`;
-}
+import { formatPrice } from '../../utils/formatPrice';
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 

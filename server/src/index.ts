@@ -17,6 +17,8 @@ import webhookRoutes from './routes/webhooks';
 import adminRoutes from './routes/admin';
 import uploadRoutes from './routes/upload';
 import wishlistRoutes from './routes/wishlist';
+import reviewRoutes from './routes/reviews';
+import guestCheckoutRoutes from './routes/guestCheckout';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -87,6 +89,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api', apiLimiter);
 app.use('/api/auth', authLimiter);
 app.use('/api/orders/create-checkout-session', checkoutLimiter);
+app.use('/api/orders/guest-checkout', checkoutLimiter);
+
+// Guest routes (no auth required)
+app.use('/api', guestCheckoutRoutes);
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -96,6 +102,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api', reviewRoutes);
 
 // Health check — includes DB ping for UptimeRobot
 app.get('/api/health', async (_req: express.Request, res: express.Response) => {

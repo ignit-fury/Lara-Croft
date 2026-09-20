@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useUserStore } from '../../stores/useUserStore';
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toLocaleString('en-IN')}`;
-}
+import { formatPrice } from '../../utils/formatPrice';
 
 const STATUS_LIST = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
 const STATUS_COLOR: Record<string, string> = {

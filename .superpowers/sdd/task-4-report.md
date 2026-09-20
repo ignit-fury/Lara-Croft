@@ -1,41 +1,32 @@
-# Task 4 Report: Mongoose Models
+# Task 4 Report: Size Guide Chart Per Category
 
-**Status:** Complete  
-**Date:** 2026-09-06
+## Status: COMPLETE
 
-## Files Created
+## Files Modified
 
-| Model | File | Key Features |
-|-------|------|-------------|
-| Category | `server/src/models/Category.ts` | slug, order, active flag, compound index |
-| Product | `server/src/models/Product.ts` | category ref, stockBySize map, text search index |
-| User | `server/src/models/User.ts` | supabaseId, role enum, embedded addresses |
-| Order | `server/src/models/Order.ts` | status/payment enums, Razorpay fields, embedded addresses |
-| Cart | `server/src/models/Cart.ts` | unique per user, size-variant items |
+| File | Change |
+|------|--------|
+| `server/src/controllers/productController.ts` | Added `getSizeGuide` controller |
+| `server/src/routes/products.ts` | Added `GET /size-guide/:categorySlug` route |
+| `server/src/routes/admin.ts` | Added `PUT /categories/:id/size-guide` admin endpoint |
+| `client/src/components/product/SizeGuide.tsx` | **NEW** — Size guide modal component |
+| `client/src/pages/ProductDetail.tsx` | Added Size Guide link + modal integration |
 
-## Indexes
+## Implementation Details
 
-- **Category:** slug, (active + order)
-- **Product:** slug, category, featured, text search (name + description)
-- **User:** supabaseId, email
-- **Order:** user, status, paymentStatus, razorpayOrderId
-- **Cart:** user
+### Server
+- **`getSizeGuide`** looks up category by slug, returns `{ sizeGuide: {...} | null }`. Gracefully returns null if column doesn't exist (catch block).
+- **Admin endpoint** uses existing `authenticate` + `authorize('admin', 'manager', 'super_admin')` middleware. Updates `size_guide` column directly via supabase client.
+- Route placed before `/:slug` to avoid param collision.
 
-## Relationships
+### Client
+- **SizeGuide** fetches from `/products/size-guide/:categorySlug`, renders table in modal overlay. Closes on X button, Escape key, or backdrop click.
+- **ProductDetail** shows "Size Guide" link next to "Size" heading when sizes exist. Passes `product.category.slug` (handles both string and object cases via type check).
 
-```
-Category 1──∞ Product
-User 1──∞ Order
-User 1──1 Cart
-Product 1──∞ Order.items
-Product 1──∞ Cart.items
-```
+### Graceful Degradation
+- If `size_guide` column doesn't exist → server catches error, returns null → component shows "No size guide available"
+- If category has no size guide data → same "No size guide" message
 
-## Notes
-
-- All models use `{ timestamps: true }` for createdAt/updatedAt
-- User links to Supabase via `supabaseId` (not password auth)
-- Cart is unique per user (one active cart)
-- Order stores denormalized item data (name, price, image) for historical accuracy
-- Currency defaults to INR (Indian Rupees)
-- Address schemas shared between User, Order (shipping + billing)
+## Verification
+- ✅ `npx tsc` — server compiles with no errors
+- ✅ `npx vite build` — client builds with no errors

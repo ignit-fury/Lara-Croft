@@ -113,10 +113,6 @@ export async function confirmOrder(req: AuthRequest, res: Response): Promise<voi
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
 
-    console.log('[ORDER] Expected sig:', expectedSignature);
-    console.log('[ORDER] Received sig:', razorpay_signature);
-    console.log('[ORDER] Match:', expectedSignature === razorpay_signature);
-
     if (expectedSignature !== razorpay_signature) {
       res.status(400).json({ success: false, error: 'Invalid payment signature' });
       return;

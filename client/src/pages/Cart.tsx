@@ -3,10 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCartStore } from '../stores/useCartStore';
 import { useUserStore } from '../stores/useUserStore';
 import { ShoppingCart, X, Minus, Plus, Trash2 } from 'lucide-react';
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toLocaleString('en-IN')}`;
-}
+import { formatPrice } from '../utils/formatPrice';
 
 interface CartDrawerProps {
   open: boolean;

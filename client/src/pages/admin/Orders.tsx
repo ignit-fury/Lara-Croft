@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useUserStore } from '../../stores/useUserStore';
 import toast from 'react-hot-toast';
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toLocaleString('en-IN')}`;
-}
+import { formatPrice } from '../../utils/formatPrice';
 
 const STATUS_LIST = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
 const PAY_COLOR: Record<string, string> = {

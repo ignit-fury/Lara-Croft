@@ -1,44 +1,47 @@
-# Task 7 Report: Product and Category CRUD
+# Task 7: Multi-Currency Display — Implementation Report
 
-## Status: ✅ Completed
+## Summary
+Implemented client-side multi-currency display for the Lara Croft e-commerce app. Users can now view prices in INR (₹), USD ($), EUR (€), or GBP (£) via a currency selector in the header. The actual payment remains in INR via Razorpay. Prices are converted using hardcoded exchange rates, and the selected currency is persisted in localStorage.
 
 ## Changes Made
 
-### 1. Created `server/src/controllers/productController.ts`
-- `getProducts`: Search, filter by category/price/size, sort, pagination
-- `getProductBySlug`: Single product lookup by slug
-- `getFeaturedProducts`: Fetch featured products (limit 8)
-- `getCategories`: List active categories sorted by order
+### New Files
+1. **`client/src/stores/useCurrencyStore.ts`** — Zustand store managing currency state with localStorage persistence. Stores currency code, exchange rate, and symbol. Provides `setCurrency` action.
+2. **`client/src/utils/formatPrice.ts`** — Shared utility exporting `formatPrice(paise, currency?)` and `convertPrice(paise, rate)`. Formats numbers with appropriate locale and decimal places per currency. Uses the currency store's current selection when no currency argument is provided.
 
-### 2. Created `server/src/routes/products.ts`
-- `GET /api/products` - List with filters
-- `GET /api/products/featured` - Featured products
-- `GET /api/products/categories` - List categories
-- `GET /api/products/:slug` - Single product
+### Modified Files
+3. **`client/src/components/layout/Header.tsx`** — Added currency dropdown selector (styled with existing design tokens) before the wishlist icon. Imports `useCurrencyStore` and updates store on change.
+4. **`client/src/components/product/ProductCard.tsx`** — Replaced local `formatPrice` with shared utility. Added small note showing original INR price when currency is not INR.
+5. **`client/src/pages/ProductDetail.tsx`** — Replaced local `formatPrice` with shared utility. Added original INR price note for non-INR currencies.
+6. **`client/src/pages/Checkout.tsx`** — Replaced local `formatPrice` with shared utility. Added two notes below total:
+   - "Payment processed in INR (₹{amount})"
+   - "You will be charged ₹{INR amount} (converted from {currency} {amount})" (only when currency ≠ INR)
+7. **`client/src/pages/Cart.tsx`** — Replaced local `formatPrice` with shared utility.
+8. **`client/src/pages/CheckoutSuccess.tsx`** — No local `formatPrice`; no changes needed.
+9. **`client/src/stores/useCartStore.ts`** — No changes needed (total returns paise; formatting handled by consumers).
+10. **`client/src/pages/admin/Products.tsx`** — Replaced local `formatPrice` with shared utility.
+11. **`client/src/pages/admin/Dashboard.tsx`** — Replaced local `formatPrice` with shared utility.
+12. **`client/src/pages/admin/Orders.tsx`** — Replaced local `formatPrice` with shared utility.
+13. **`client/src/pages/Account.tsx`** — Replaced local `formatPrice` with shared utility.
 
-### 3. Updated `server/src/index.ts`
-- Added product routes import
-- Mounted at `/api/products`
+## Key Design Decisions
+- **Zustand with persist middleware** for currency store, matching existing pattern.
+- **Exchange rates hardcoded** as per brief (USD 0.012, EUR 0.011, GBP 0.0095).
+- **Locale-aware formatting**: INR uses `en-IN` with 0 decimals; USD/EUR/GBP use their respective locales with 2 decimals.
+- **Original INR price shown** as small note when currency ≠ INR, per brief requirements.
+- **Razorpay payment always INR** — `options.amount` remains in paise; display conversion is client-side only.
 
-## API Endpoints
+## Verification
+- Build succeeds with `npx vite build` (no TypeScript errors).
+- No server code, database schema, or environment variables modified.
+- Currency preference persists across sessions via localStorage.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/products` | List products with filters |
-| GET | `/api/products/featured` | Get featured products |
-| GET | `/api/products/categories` | Get categories |
-| GET | `/api/products/:slug` | Get product by slug |
+## Files Not Modified
+- Server code (as per constraint)
+- Database schema (as per constraint)
+- `client/src/pages/CheckoutSuccess.tsx` (no formatPrice calls)
 
-## Query Parameters for `/api/products`
-
-- `search`: Text search
-- `category`: Filter by category slug
-- `minPrice`, `maxPrice`: Price range
-- `size`: Comma-separated sizes
-- `sort`: `price_asc`, `price_desc`, `name`, or default `createdAt`
-- `page`, `limit`: Pagination (default: page 1, limit 12)
-
-## Commit
-```
-feat: add product and category routes with search, filter, and pagination
-```
+## Testing Notes
+- Manual testing recommended for currency selector behavior across all price displays.
+- Verify Razorpay payment amount remains in INR regardless of selected currency.
+- Check localStorage persistence by refreshing page after currency change.

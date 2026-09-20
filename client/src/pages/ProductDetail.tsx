@@ -3,14 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useCartStore } from '../stores/useCartStore';
 import { useUserStore } from '../stores/useUserStore';
+import { useCurrencyStore } from '../stores/useCurrencyStore';
 import toast from 'react-hot-toast';
 import { Minus, Plus } from 'lucide-react';
 import type { Product } from '../types';
 import ProductCard from '../components/product/ProductCard';
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toLocaleString('en-IN')}`;
-}
+import SizeGuide from '../components/product/SizeGuide';
+import StarRating from '../components/product/StarRating';
+import ReviewForm from '../components/product/ReviewForm';
+import { formatPrice } from '../utils/formatPrice';
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -22,7 +23,30 @@ export default function ProductDetail() {
   const [related, setRelated] = useState<Product[]>([]);
   const { addItem } = useCartStore();
   const { user } = useUserStore();
+  const { currency } = useCurrencyStore();
   const [adding, setAdding] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
+
+  const fetchReviews = async () => {
+    if (!slug) return;
+    try {
+      const res = await api.get(`/products/${slug}/reviews`);
+      const { reviews: r, averageRating, totalCount } = res.data.data;
+      setReviews(r);
+      setAvgRating(averageRating);
+      setReviewCount(totalCount);
+      if (user) {
+        setHasReviewed(r.some((rev: any) => rev.userId === user.id));
+      }
+    } catch {
+      // reviews table might not exist
+    }
+  };
 
   useEffect(() => {
     api.get(`/products/${slug}`).then((res) => {
@@ -33,7 +57,22 @@ export default function ProductDetail() {
     api.get(`/products/${slug}/related`).then((res) => {
       setRelated(res.data.data);
     });
-  }, [slug]);
+    fetchReviews();
+  }, [slug, user]);
+
+  useEffect(() => {
+    if (user && product) {
+      api.get('/orders')
+        .then((res) => {
+          const orders = res.data.data || [];
+          const purchased = orders.some((o: any) =>
+            o.items?.some((item: any) => item.productId === product.id)
+          );
+          setHasPurchased(purchased);
+        })
+        .catch(() => {});
+    }
+  }, [user, product]);
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -66,6 +105,7 @@ export default function ProductDetail() {
   const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
 
   return (
+    <>
     <div className="max-w-[1400px] mx-auto px-6 py-10">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Images */}
@@ -99,6 +139,9 @@ export default function ProductDetail() {
                 <span className="text-[13px] text-brand-accent font-semibold">{discount}% off</span>
               </>
             )}
+            {currency !== 'INR' && (
+              <span className="text-[12px] text-brand-muted ml-2">({formatPrice(product.price, 'INR')})</span>
+            )}
           </div>
 
           <p className="text-brand-muted leading-relaxed text-[14px]">{product.description}</p>
@@ -106,7 +149,15 @@ export default function ProductDetail() {
           {/* Sizes */}
           {product.sizes?.length > 0 && (
             <div>
-              <h3 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-3">Size</h3>
+              <div className="flex items-center gap-3 mb-3">
+                <h3 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text">Size</h3>
+                <button
+                  onClick={() => setShowSizeGuide(true)}
+                  className="text-[11px] font-semibold uppercase tracking-[1px] text-brand-accent underline hover:text-brand-accent2"
+                >
+                  Size Guide
+                </button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {product.sizes.map((size) => (
                   <button
@@ -175,6 +226,55 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
+
+      {/* Reviews Section */}
+      <div className="mt-16">
+        <h2 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-6">Customer Reviews</h2>
+
+        {reviewCount > 0 ? (
+          <div className="flex items-center gap-3 mb-6">
+            <StarRating rating={avgRating} size={20} />
+            <span className="text-[14px] font-semibold text-brand-text">{avgRating}</span>
+            <span className="text-[13px] text-brand-muted">({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</span>
+          </div>
+        ) : (
+          <p className="text-[14px] text-brand-muted mb-6">No reviews yet. Be the first to review!</p>
+        )}
+
+        {reviews.length > 0 && (
+          <div className="space-y-6 mb-8">
+            {reviews.map((review) => (
+              <div key={review.id} className="border border-brand-border p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <StarRating rating={review.rating} size={16} />
+                  <span className="text-[13px] font-semibold text-brand-text">{review.title}</span>
+                </div>
+                <p className="text-[14px] text-brand-muted mb-2">{review.comment}</p>
+                <div className="flex items-center gap-2 text-[12px] text-brand-muted">
+                  <span>{review.userName}</span>
+                  <span>&middot;</span>
+                  <span>{new Date(review.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {user && hasPurchased && !hasReviewed && (
+          <div className="border border-brand-border p-6">
+            <h3 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-4">Write a Review</h3>
+            <ReviewForm onReviewSubmitted={fetchReviews} />
+          </div>
+        )}
+      </div>
     </div>
+
+      {showSizeGuide && (
+        <SizeGuide
+          categorySlug={typeof product.category === 'string' ? product.category : product.category.slug}
+          onClose={() => setShowSizeGuide(false)}
+        />
+      )}
+    </>
   );
 }

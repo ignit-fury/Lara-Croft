@@ -60,12 +60,12 @@ function App() {
           <Route path="/product/:slug" element={<ProductDetail />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/checkout" element={<Checkout />} />
           <Route element={<ProtectedRoute />}>
-            <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
             <Route path="/account" element={<Account />} />
-          <Route path="*" element={<NotFound />} />
           </Route>
+          <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/login" element={<CustomerAuth />} />

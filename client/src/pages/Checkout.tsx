@@ -2,13 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import api from '../services/api';
 import { useCartStore } from '../stores/useCartStore';
+import { useGuestCartStore } from '../stores/useGuestCartStore';
 import { useUserStore } from '../stores/useUserStore';
+import { useCurrencyStore } from '../stores/useCurrencyStore';
+import { useGuestSession } from '../hooks/useGuestSession';
 import toast from 'react-hot-toast';
 import type { Address } from '../types';
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toLocaleString('en-IN')}`;
-}
+import { formatPrice } from '../utils/formatPrice';
 
 declare global {
   interface Window {
@@ -19,12 +19,30 @@ declare global {
 export default function Checkout() {
   const navigate = useNavigate();
   const { user, setUser } = useUserStore();
-  const { items, total, clearCart } = useCartStore();
+  const { currency } = useCurrencyStore();
+  const { guestSessionId } = useGuestSession();
+  const isGuest = !user;
+
+  const authItems = useCartStore((s) => s.items);
+  const authTotal = useCartStore((s) => s.total);
+  const authClearCart = useCartStore((s) => s.clearCart);
+
+  const guestItems = useGuestCartStore((s) => s.items);
+  const guestTotal = useGuestCartStore((s) => s.total);
+  const guestClearCart = useGuestCartStore((s) => s.clearCart);
+  const fetchGuestCart = useGuestCartStore((s) => s.fetchCart);
+
+  const items = isGuest ? guestItems : authItems;
+  const total = isGuest ? guestTotal : authTotal;
+  const clearCart = isGuest ? guestClearCart : authClearCart;
+
   const [loading, setLoading] = useState(false);
   const processingRef = useRef(false);
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
   const [selectedSavedIndex, setSelectedSavedIndex] = useState<number | null>(null);
   const [saveAddress, setSaveAddress] = useState(false);
+
+  const [guestInfo, setGuestInfo] = useState({ email: '', name: '', phone: '' });
   const [address, setAddress] = useState({
     label: 'Home',
     line1: '',
@@ -35,6 +53,12 @@ export default function Checkout() {
     country: 'IN',
     phone: '',
   });
+
+  useEffect(() => {
+    if (!user) {
+      fetchGuestCart(guestSessionId);
+    }
+  }, [user, guestSessionId, fetchGuestCart]);
 
   useEffect(() => {
     if (!user) return;
@@ -94,14 +118,25 @@ export default function Checkout() {
 
   const handleCheckout = async () => {
     if (processingRef.current) return;
+
     if (!address.line1 || !address.city || !address.state || !address.postalCode || !address.phone) {
       toast.error('Please fill all required fields');
       return;
     }
+
+    if (isGuest) {
+      if (!guestInfo.email || !guestInfo.name || !guestInfo.phone) {
+        toast.error('Please fill email, name, and phone');
+        return;
+      }
+      address.phone = guestInfo.phone;
+    }
+
     processingRef.current = true;
     setLoading(true);
+
     try {
-      if (saveAddress && selectedSavedIndex === null) {
+      if (!isGuest && saveAddress && selectedSavedIndex === null) {
         try {
           const res = await api.post('/auth/addresses', address);
           if (user && res.data.data?.addresses) {
@@ -109,13 +144,36 @@ export default function Checkout() {
           }
           toast.success('Address saved to your account');
         } catch {
-          // continue with checkout even if save fails
+          // continue even if save fails
         }
       }
 
-      const res: any = await api.post('/orders/create-checkout-session', { shippingAddress: address });
-      const { orderId, amount } = res.data.data;
-      console.log('[RAZORPAY] Order created:', { orderId, amount, key: import.meta.env.VITE_RAZORPAY_KEY_ID });
+      let orderId: string;
+      let amount: number;
+
+      if (isGuest) {
+        const res: any = await api.post('/orders/guest-checkout', {
+          email: guestInfo.email,
+          name: guestInfo.name,
+          phone: guestInfo.phone,
+          shippingAddress: address,
+          items: items.map((i) => ({
+            product_id: i.product_id,
+            size: i.size,
+            quantity: i.quantity,
+            name: i.name,
+            price: i.price,
+            image: i.image,
+          })),
+          guestSessionId,
+        });
+        orderId = res.data.data.orderId;
+        amount = res.data.data.amount;
+      } else {
+        const res: any = await api.post('/orders/create-checkout-session', { shippingAddress: address });
+        orderId = res.data.data.orderId;
+        amount = res.data.data.amount;
+      }
 
       const loaded = await loadRazorpay();
       if (!loaded) {
@@ -125,21 +183,40 @@ export default function Checkout() {
         return;
       }
 
+      const prefillData: any = {};
+      if (isGuest) {
+        prefillData.name = guestInfo.name;
+        prefillData.email = guestInfo.email;
+        prefillData.contact = guestInfo.phone;
+      } else {
+        prefillData.name = user?.name || '';
+        prefillData.email = user?.email || '';
+        prefillData.contact = address.phone;
+      }
+
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: amount,
+        amount,
         currency: 'INR',
         name: 'Lara Croft',
         order_id: orderId,
         handler: async (response: any) => {
-          console.log('[RAZORPAY] Callback response:', JSON.stringify(response));
           try {
-            await api.post('/orders/confirm', {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
-            await clearCart();
+            if (isGuest) {
+              await api.post('/orders/guest-confirm', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                guestSessionId,
+              });
+            } else {
+              await api.post('/orders/confirm', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+            }
+            clearCart();
             navigate('/checkout/success');
           } catch (err: any) {
             toast.error(err.message || 'Payment verification failed');
@@ -153,11 +230,7 @@ export default function Checkout() {
             setLoading(false);
           },
         },
-        prefill: {
-          name: user?.name || '',
-          email: user?.email || '',
-          contact: address.phone,
-        },
+        prefill: prefillData,
         theme: {
           color: '#6f4423',
         },
@@ -177,18 +250,44 @@ export default function Checkout() {
   const tax = Math.round(subtotal * 0.18);
   const grandTotal = subtotal + shipping + tax;
 
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
-
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-10">
       <h1 className="text-[28px] font-extrabold text-brand-text uppercase tracking-wide mb-8">Checkout</h1>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
+          {isGuest && (
+            <div className="mb-6 p-4 border border-brand-border bg-brand-card">
+              <h2 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-4">Guest Information</h2>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Full Name *"
+                  value={guestInfo.name}
+                  onChange={(e) => setGuestInfo({ ...guestInfo, name: e.target.value })}
+                  className="w-full border border-brand-border bg-brand-card text-brand-text px-4 py-3 text-[13px] focus:outline-none focus:border-brand-accent"
+                />
+                <input
+                  type="email"
+                  placeholder="Email Address *"
+                  value={guestInfo.email}
+                  onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
+                  className="w-full border border-brand-border bg-brand-card text-brand-text px-4 py-3 text-[13px] focus:outline-none focus:border-brand-accent"
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone Number *"
+                  value={guestInfo.phone}
+                  onChange={(e) => setGuestInfo({ ...guestInfo, phone: e.target.value })}
+                  className="w-full border border-brand-border bg-brand-card text-brand-text px-4 py-3 text-[13px] focus:outline-none focus:border-brand-accent"
+                />
+              </div>
+              <p className="text-[11px] text-brand-muted mt-2">You'll receive order confirmation at this email.</p>
+            </div>
+          )}
+
           <h2 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-4">Shipping Address</h2>
 
-          {savedAddresses.length > 0 && (
+          {!isGuest && savedAddresses.length > 0 && (
             <div className="mb-4">
               <div className="flex gap-3 mb-3">
                 {savedAddresses.map((addr, i) => (
@@ -222,7 +321,7 @@ export default function Checkout() {
               <input type="text" placeholder="PIN Code *" value={address.postalCode} onChange={(e) => setAddress({ ...address, postalCode: e.target.value })} className="border border-brand-border bg-brand-card text-brand-text px-4 py-3 text-[13px] focus:outline-none focus:border-brand-accent" />
               <input type="tel" placeholder="Phone *" value={address.phone} onChange={(e) => setAddress({ ...address, phone: e.target.value })} className="border border-brand-border bg-brand-card text-brand-text px-4 py-3 text-[13px] focus:outline-none focus:border-brand-accent" />
             </div>
-            {selectedSavedIndex === null && (
+            {!isGuest && selectedSavedIndex === null && (
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="w-4 h-4 accent-brand-accent" />
                 <span className="text-[13px] text-brand-muted">Save this address for future orders</span>
@@ -234,10 +333,10 @@ export default function Checkout() {
         <div className="p-6 border border-brand-border h-fit" style={{ background: '#fafafa' }}>
           <h2 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-4">Order Summary</h2>
           <div className="space-y-3 mb-4">
-            {items.map((item) => (
-              <div key={`${item.product.id}-${item.size}`} className="flex justify-between text-[13px]">
-                <span className="text-brand-muted">{item.product.name} x{item.quantity}</span>
-                <span>{formatPrice(item.product.price * item.quantity)}</span>
+            {items.map((item: any) => (
+              <div key={`${item.product_id || item.product?.id}-${item.size}`} className="flex justify-between text-[13px]">
+                <span className="text-brand-muted">{item.name || item.product?.name} x{item.quantity}</span>
+                <span>{formatPrice((item.price || item.product?.price || 0) * item.quantity)}</span>
               </div>
             ))}
           </div>
@@ -248,6 +347,14 @@ export default function Checkout() {
             <div className="border-t border-brand-border pt-2 flex justify-between font-semibold">
               <span>Total</span><span className="text-brand-text">{formatPrice(grandTotal)}</span>
             </div>
+            <div className="text-[11px] text-brand-muted mt-1">
+              Payment processed in INR ({formatPrice(grandTotal, 'INR')})
+            </div>
+            {currency !== 'INR' && (
+              <div className="text-[11px] text-brand-muted mt-1">
+                You will be charged {formatPrice(grandTotal, 'INR')} (converted from {currency} {formatPrice(grandTotal)})
+              </div>
+            )}
           </div>
           <button
             onClick={handleCheckout}

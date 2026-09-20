@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useUserStore } from '../../stores/useUserStore';
 import { useCartStore } from '../../stores/useCartStore';
 import { useWishlistStore } from '../../stores/useWishlistStore';
+import { useCurrencyStore, type Currency } from '../../stores/useCurrencyStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useState } from 'react';
 import { ShoppingCart, Heart, User, Menu, X } from 'lucide-react';
@@ -11,6 +12,7 @@ export default function Header() {
   const { user } = useUserStore();
   const { items } = useCartStore();
   const { items: wishlistItems } = useWishlistStore();
+  const { currency, setCurrency } = useCurrencyStore();
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -22,7 +24,7 @@ export default function Header() {
       {/* Announcement Bar */}
       <div className="text-brand-cream text-center py-2 px-4 text-[13px] font-medium tracking-wide"
         style={{ background: 'linear-gradient(90deg, #6f4423 0%, #8a5a30 50%, #6f4423 100%)', backgroundSize: '200% 100%', animation: 'shimmer 4s ease-in-out infinite' }}>
-        Free Shipping on Orders Over ₹1,000 &nbsp;·&nbsp; Use Code <strong>LARA25</strong> for 25% Off
+        Free Shipping on Orders Over ₹5,000 &nbsp;·&nbsp; Use Code <strong>LARA25</strong> for 25% Off
       </div>
       <style>{`@keyframes shimmer { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }`}</style>
 
@@ -42,6 +44,16 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-4">
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as Currency)}
+              className="text-brand-muted text-[12px] font-semibold bg-transparent border border-brand-border rounded px-2 py-1 focus:outline-none focus:border-brand-accent"
+            >
+              <option value="INR">₹ INR</option>
+              <option value="USD">$ USD</option>
+              <option value="EUR">€ EUR</option>
+              <option value="GBP">£ GBP</option>
+            </select>
             <Link to="/wishlist" className="relative text-brand-muted hover:text-brand-text transition-colors text-lg">
               <Heart size={20} />
               {wishlistItems.length > 0 && (

@@ -137,3 +137,21 @@ export async function getCategories(_req: Request, res: Response): Promise<void>
     res.status(500).json({ success: false, error: error.message });
   }
 }
+
+export async function getSizeGuide(req: Request, res: Response): Promise<void> {
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('size_guide')
+      .eq('slug', req.params.categorySlug as string)
+      .maybeSingle();
+
+    if (error || !data) {
+      res.json({ success: true, data: { sizeGuide: null } });
+      return;
+    }
+    res.json({ success: true, data: { sizeGuide: (data as any).size_guide || null } });
+  } catch {
+    res.json({ success: true, data: { sizeGuide: null } });
+  }
+}

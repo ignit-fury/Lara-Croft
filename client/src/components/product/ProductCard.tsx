@@ -3,19 +3,18 @@ import { Heart } from 'lucide-react';
 import type { Product } from '../../types';
 import { useWishlistStore } from '../../stores/useWishlistStore';
 import { useUserStore } from '../../stores/useUserStore';
+import { useCurrencyStore } from '../../stores/useCurrencyStore';
+import { formatPrice } from '../../utils/formatPrice';
 
 interface ProductCardProps {
   product: Product;
-}
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toLocaleString('en-IN')}`;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
   const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
   const { user } = useUserStore();
   const { isInWishlist, toggleWishlist } = useWishlistStore();
+  const { currency } = useCurrencyStore();
   const inWishlist = isInWishlist(product.id);
 
   const handleToggle = (e: React.MouseEvent) => {
@@ -68,6 +67,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           <span className="text-[17px] font-extrabold">{formatPrice(product.price)}</span>
           {product.originalPrice > product.price && (
             <span className="text-[13px] text-brand-muted line-through">{formatPrice(product.originalPrice)}</span>
+          )}
+          {currency !== 'INR' && (
+            <span className="text-[11px] text-brand-muted ml-1">({formatPrice(product.price, 'INR')})</span>
           )}
         </div>
         <div className={`flex items-center gap-1.5 text-[10px] font-semibold mt-1.5 ${product.stock > 0 ? 'text-brand-cream' : 'text-brand-muted'}`}>

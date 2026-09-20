@@ -4,10 +4,7 @@ import api from '../services/api';
 import { useUserStore } from '../stores/useUserStore';
 import toast from 'react-hot-toast';
 import type { Order, Address } from '../types';
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toLocaleString('en-IN')}`;
-}
+import { formatPrice } from '../utils/formatPrice';
 
 const emptyAddress: Address = {
   label: 'Home',
