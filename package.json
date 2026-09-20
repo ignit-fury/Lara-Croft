@@ -1,6 +1,7 @@
 {
   "name": "prima-facie",
   "private": true,
+  "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev": "concurrently \"pnpm --filter server dev\" \"pnpm --filter client dev\"",
     "build": "pnpm --filter client build"
