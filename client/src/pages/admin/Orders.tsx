@@ -22,7 +22,6 @@ export default function AdminOrders() {
       navigate('/admin/login');
       return;
     }
-    setLoading(true);
     const params = statusFilter !== 'all' ? `?status=${statusFilter}` : '';
     api.get(`/admin/orders${params}`).then((res) => {
       setOrders(res.data.data);

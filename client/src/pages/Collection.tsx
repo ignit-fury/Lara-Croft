@@ -9,7 +9,6 @@ export default function CollectionPage() {
   const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
-    setLoading(true);
     api.get(`/products?sort=${sortBy === 'newest' ? '' : sortBy}`).then((res) => {
       setProducts(res.data.data);
       setLoading(false);

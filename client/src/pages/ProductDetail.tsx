@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useCartStore } from '../stores/useCartStore';
@@ -32,7 +32,7 @@ export default function ProductDetail() {
   const [hasPurchased, setHasPurchased] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
 
-  const fetchReviews = useCallback(async () => {
+  const fetchReviews = async () => {
     if (!slug) return;
     try {
       const res = await api.get(`/products/${slug}/reviews`);
@@ -46,7 +46,7 @@ export default function ProductDetail() {
     } catch {
       // reviews table might not exist
     }
-  }, [slug, user]);
+  };
 
   useEffect(() => {
     api.get(`/products/${slug}`).then((res) => {
@@ -57,8 +57,16 @@ export default function ProductDetail() {
     api.get(`/products/${slug}/related`).then((res) => {
       setRelated(res.data.data);
     });
-    fetchReviews();
-  }, [slug, user, fetchReviews]);
+    api.get(`/products/${slug}/reviews`).then((res) => {
+      const { reviews: r, averageRating, totalCount } = res.data.data;
+      setReviews(r);
+      setAvgRating(averageRating);
+      setReviewCount(totalCount);
+      if (user) {
+        setHasReviewed(r.some((rev: any) => rev.userId === user.id));
+      }
+    }).catch(() => {});
+  }, [slug, user]);
 
   useEffect(() => {
     if (user && product) {
