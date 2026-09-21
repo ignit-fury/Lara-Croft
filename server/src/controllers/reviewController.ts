@@ -46,7 +46,7 @@ export async function getProductReviews(req: Request, res: Response): Promise<vo
       : 0;
 
     res.json({ success: true, data: { reviews: safeReviews, averageRating, totalCount } });
-  } catch (error: any) {
+  } catch {
     console.error('[REVIEWS] getProductReviews error');
     res.json({ success: true, data: { reviews: [], averageRating: 0, totalCount: 0 } });
   }
@@ -134,7 +134,7 @@ export async function createReview(req: AuthRequest, res: Response): Promise<voi
         createdAt: review.created_at,
       },
     });
-  } catch (error: any) {
+  } catch {
     console.error('[REVIEWS] createReview error');
     res.status(500).json({ success: false, error: 'Failed to create review' });
   }
@@ -185,7 +185,7 @@ export async function deleteReview(req: AuthRequest, res: Response): Promise<voi
     }
 
     res.json({ success: true });
-  } catch (error: any) {
+  } catch {
     console.error('[REVIEWS] deleteReview error');
     res.status(500).json({ success: false, error: 'Failed to delete review' });
   }

@@ -33,7 +33,7 @@ export function validate(schema: ZodSchema, opts: ValidateOptions = {}) {
 
       // Strip null values from objects — Zod .optional() only accepts undefined, not null
       if (input && typeof input === 'object' && !Array.isArray(input)) {
-        input = Object.fromEntries(Object.entries(input).filter(([_, v]) => v !== null));
+        input = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== null));
       }
 
       if (normalize) {

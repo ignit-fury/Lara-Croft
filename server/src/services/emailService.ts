@@ -3,7 +3,6 @@ import nodemailer from 'nodemailer';
 import { generateInvoicePdf, InvoiceData } from './invoicePdf';
 
 // Lazy SMTP transporter — only created when SMTP fallback is needed
-let smtpTransporter: any = null;
 function getSmtpTransporter() {
   return nodemailer.createTransport({
     host: env.SMTP_HOST || 'smtp.gmail.com',

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import bcrypt from 'bcrypt';
-import { supabase, findOne, updateOne } from './db/supabase-db';
+import { findOne, updateOne } from './db/supabase-db';
 
 async function setAdminPassword() {
   const email = process.argv[2];
