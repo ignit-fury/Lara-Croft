@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import axios from 'axios';
 
 const API = 'http://localhost:3001/api';
@@ -7,7 +7,7 @@ const PASSWORD = 'laraCroft2126@';
 const NAME = 'Lara Croft Test';
 
 let token: string;
-let userId: string;
+let _userId: string;
 let productId: any;
 let address: any;
 let razorpayOrderId: string;
@@ -44,7 +44,7 @@ describe('Lara Croft — Full Payment Protocol (API)', () => {
       expect(signupRes.data.success).toBe(true);
       console.log('[OK] Signed up new account');
       token = signupRes.data.data.token;
-      userId = signupRes.data.data.user.id;
+      _userId = signupRes.data.data.user.id;
     }
     expect(token).toBeTruthy();
     console.log(`[OK] User: ${EMAIL} (role: ${loginRes.data.data?.user?.role || 'user'})`);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useCartStore } from '../stores/useCartStore';
@@ -32,7 +32,7 @@ export default function ProductDetail() {
   const [hasPurchased, setHasPurchased] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
 
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     if (!slug) return;
     try {
       const res = await api.get(`/products/${slug}/reviews`);
@@ -46,7 +46,7 @@ export default function ProductDetail() {
     } catch {
       // reviews table might not exist
     }
-  };
+  }, [slug, user]);
 
   useEffect(() => {
     api.get(`/products/${slug}`).then((res) => {
@@ -58,7 +58,7 @@ export default function ProductDetail() {
       setRelated(res.data.data);
     });
     fetchReviews();
-  }, [slug, user]);
+  }, [slug, user, fetchReviews]);
 
   useEffect(() => {
     if (user && product) {

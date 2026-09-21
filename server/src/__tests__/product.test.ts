@@ -12,7 +12,7 @@ vi.mock('../db/supabase-db', () => ({
   countRows: vi.fn(),
 }));
 
-import { supabase, findOne, countRows } from '../db/supabase-db';
+import { supabase, findOne } from '../db/supabase-db';
 
 describe('Product Controller', () => {
   beforeEach(() => {

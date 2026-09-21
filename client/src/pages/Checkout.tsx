@@ -129,7 +129,9 @@ export default function Checkout() {
         toast.error('Please fill email, name, and phone');
         return;
       }
-      address.phone = guestInfo.phone;
+      if (address.phone !== guestInfo.phone) {
+        setAddress({ ...address, phone: guestInfo.phone });
+      }
     }
 
     processingRef.current = true;

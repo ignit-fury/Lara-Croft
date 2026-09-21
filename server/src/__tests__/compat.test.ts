@@ -79,7 +79,7 @@ describe('backward compat (Plan A)', () => {
   });
 
   it('3. missing required field -> 400', () => {
-    const { city, ...noCity } = NEW_ADDRESS;
+    const { city: _, ...noCity } = NEW_ADDRESS;
     const req: any = { method: 'POST', path: '/auth/addresses', body: noCity };
     const res = mockRes();
     const next = vi.fn();
