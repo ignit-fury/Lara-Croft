@@ -112,7 +112,7 @@ export default function AdminProducts() {
         price: Math.round(parseFloat(form.price) * 100),
         original_price: Math.round(parseFloat(form.originalPrice || form.price) * 100),
         description: form.description,
-        category_id: form.category || null,
+        category_id: form.category || undefined,
         sizes: form.sizes,
         stock: parseInt(form.stock) || 0,
         featured: form.featured,
