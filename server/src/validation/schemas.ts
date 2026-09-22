@@ -81,12 +81,12 @@ export const confirmOrderSchema = z.object({
 // Admin — Products (internal clients only, no legacy mapping)
 export const createProductSchema = z.object({
   name: z.string().min(1).max(200),
-  description: z.string().min(1).max(5000),
+  description: z.string().max(5000).default(''),
   price: z.number().min(0),
   original_price: z.number().min(0).optional(),
   category_id: z.string().uuid(),
-  image: z.string().url().optional(),
-  images: z.array(z.string().url()).optional(),
+  image: z.string().optional(),
+  images: z.array(z.string()).optional(),
   sizes: z.array(z.string()).optional(),
   stock: z.number().int().min(0).default(0),
   featured: z.boolean().default(false),
