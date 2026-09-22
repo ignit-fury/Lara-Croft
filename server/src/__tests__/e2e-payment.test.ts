@@ -38,7 +38,7 @@ describe('Lara Croft — Full Payment Protocol (API)', () => {
     if (loginRes.data.success) {
       console.log('[OK] Logged in existing account');
       token = loginRes.data.data.token;
-      userId = loginRes.data.data.user.id;
+      _userId = loginRes.data.data.user.id;
     } else {
       const signupRes = await axios.post(`${API}/auth/signup`, { email: EMAIL, password: PASSWORD, name: NAME });
       expect(signupRes.data.success).toBe(true);
