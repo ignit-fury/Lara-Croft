@@ -167,7 +167,7 @@ export async function updateUserRole(req: AuthRequest, res: Response): Promise<v
 
 export async function createProduct(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const { originalPrice, categoryId, stockBySize, ...rest } = req.body;
+    const { originalPrice, categoryId, stockBySize, on_sale, onSale, ...rest } = req.body;
     const payload = {
       ...rest,
       ...(originalPrice !== undefined && { original_price: originalPrice }),
@@ -184,7 +184,7 @@ export async function createProduct(req: AuthRequest, res: Response): Promise<vo
 export async function updateProduct(req: AuthRequest, res: Response): Promise<void> {
   try {
     const id = req.params.id as string;
-    const { originalPrice, categoryId, stockBySize, ...rest } = req.body;
+    const { originalPrice, categoryId, stockBySize, on_sale, onSale, ...rest } = req.body;
     const payload = {
       ...rest,
       ...(originalPrice !== undefined && { original_price: originalPrice }),

@@ -84,20 +84,19 @@ export const createProductSchema = z.object({
   description: z.string().max(5000).default(''),
   price: z.number().min(0),
   original_price: z.number().min(0).optional(),
-  category_id: z.string().uuid(),
+  category_id: z.string().uuid().optional(),
   image: z.string().optional(),
   images: z.array(z.string()).optional(),
   sizes: z.array(z.string()).optional(),
   stock: z.number().int().min(0).default(0),
   featured: z.boolean().default(false),
-  on_sale: z.boolean().default(false),
 });
 
 export const updateProductSchema = createProductSchema.partial();
 
-// Admin — Orders
+// Admin — Orders (must match UI STATUS_LIST + existing DB rows)
 export const updateOrderStatusSchema = z.object({
-  status: z.enum(['pending', 'paid', 'shipped', 'delivered', 'cancelled']),
+  status: z.enum(['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'paid', 'failed']),
 });
 
 // Admin — Users
