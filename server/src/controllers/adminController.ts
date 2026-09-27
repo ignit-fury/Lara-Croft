@@ -168,12 +168,18 @@ export async function updateUserRole(req: AuthRequest, res: Response): Promise<v
 export async function createProduct(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { originalPrice, categoryId, stockBySize, on_sale, onSale, ...rest } = req.body;
-    const payload = {
+    const payload: Record<string, any> = {
       ...rest,
       ...(originalPrice !== undefined && { original_price: originalPrice }),
       ...(categoryId !== undefined && { category_id: categoryId }),
       ...(stockBySize !== undefined && { stock_by_size: stockBySize }),
     };
+    if (payload.slug == null && typeof payload.name === 'string' && payload.name.trim()) {
+      payload.slug = payload.name.toLowerCase().trim().replace(/\s+/g, '-');
+    }
+    if (payload.original_price == null && typeof payload.price === 'number') {
+      payload.original_price = payload.price;
+    }
     const product = await insertOne('products', payload);
     res.status(201).json({ success: true, data: normalize(product) });
   } catch (error: any) {

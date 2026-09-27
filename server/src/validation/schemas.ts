@@ -81,6 +81,8 @@ export const confirmOrderSchema = z.object({
 // Admin — Products (internal clients only, no legacy mapping)
 export const createProductSchema = z.object({
   name: z.string().min(1).max(200),
+  slug: z.string().min(1).max(200),
+  brand: z.string().min(1).max(100).default('LARA CROFT'),
   description: z.string().max(5000).default(''),
   price: z.number().min(0),
   original_price: z.number().min(0).optional(),
