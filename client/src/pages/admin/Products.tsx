@@ -7,6 +7,7 @@ import { Star } from 'lucide-react';
 import { formatPrice } from '../../utils/formatPrice';
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
+const WAIST_SIZES = ['28', '30', '32', '34', '36', '38', '40', '42'];
 
 interface ProductForm {
   name: string;
@@ -266,12 +267,18 @@ export default function AdminProducts() {
                 <div className="col-span-2 flex flex-col gap-1.5">
                   <label className="text-[11px] font-[700] uppercase tracking-[.8px] text-brand-muted">Sizes</label>
                   <div className="flex flex-wrap gap-2">
-                    {ALL_SIZES.map((size) => (
-                      <label key={size} className="flex items-center gap-1.5 bg-white border border-brand-border px-3 py-1.5 text-[12px] font-[600] cursor-pointer">
-                        <input type="checkbox" checked={form.sizes.includes(size)} onChange={() => toggleSize(size)} className="accent-brand-accent" />
-                        {size}
-                      </label>
-                    ))}
+                    {(() => {
+                      const selectedCat = categories.find((c) => c.id === form.category);
+                      const useWaist = selectedCat?.slug === 'jeans' || form.sizes.some((s) => /^\d+$/.test(s));
+                      const options = useWaist ? WAIST_SIZES : ALL_SIZES;
+                      const extras = form.sizes.filter((s) => !options.includes(s));
+                      return [...options, ...extras].map((size) => (
+                        <label key={size} className="flex items-center gap-1.5 bg-white border border-brand-border px-3 py-1.5 text-[12px] font-[600] cursor-pointer">
+                          <input type="checkbox" checked={form.sizes.includes(size)} onChange={() => toggleSize(size)} className="accent-brand-accent" />
+                          {size}
+                        </label>
+                      ));
+                    })()}
                   </div>
                 </div>
                 <div className="col-span-2 flex flex-col gap-1.5">
