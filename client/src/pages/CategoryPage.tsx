@@ -11,7 +11,7 @@ export default function CategoryPage() {
   const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
-    api.get(`/products?category=${slug}&sort=${sortBy === 'newest' ? '' : sortBy}`).then((res) => {
+    api.get(`/products?category=${slug}&limit=100&sort=${sortBy === 'newest' ? '' : sortBy}`).then((res) => {
       setProducts(res.data.data);
       setLoading(false);
     });
