@@ -42,8 +42,20 @@ export default function Footer() {
         <div>
           <h4 className="text-[11px] font-bold uppercase tracking-[2px] text-brand-text mb-4">Help</h4>
           <ul className="space-y-2.5">
-            {['Shipping Info', 'Returns & Exchanges', 'Size Guide', 'FAQ', 'Contact Us'].map((item) => (
-              <li key={item}><a href="#" className="text-brand-muted text-[13px] hover:text-brand-text transition-colors">{item}</a></li>
+            {[
+              { label: 'Shipping Info', to: '/shipping' },
+              { label: 'Returns & Exchanges', to: '/returns' },
+              { label: 'Size Guide', to: '/faq#size-guide' },
+              { label: 'FAQ', to: '/faq' },
+              { label: 'Contact Us', to: '/contact' },
+            ].map((item) => (
+              <li key={item.label}>
+                {item.to ? (
+                  <Link to={item.to} className="text-brand-muted text-[13px] hover:text-brand-text transition-colors">{item.label}</Link>
+                ) : (
+                  <a href="#" className="text-brand-muted text-[13px] hover:text-brand-text transition-colors">{item.label}</a>
+                )}
+              </li>
             ))}
           </ul>
         </div>
@@ -54,10 +66,9 @@ export default function Footer() {
           <ul className="space-y-2.5">
             {[
               { label: 'About Lara Croft', to: '/about' },
-              { label: 'Careers', href: '#' },
-              { label: 'Privacy Policy', href: '#' },
-              { label: 'Terms of Service', href: '#' },
-              { label: 'Refund Policy', href: '#' },
+              { label: 'Privacy Policy', to: '/privacy' },
+              { label: 'Terms of Service', to: '/terms' },
+              { label: 'Refund Policy', to: '/refund-policy' },
             ].map((item) => (
               <li key={item.label}>
                 {item.to ? (
@@ -74,9 +85,9 @@ export default function Footer() {
       <div className="max-w-[1400px] mx-auto pt-5 border-t border-brand-border flex flex-col md:flex-row justify-between items-center gap-3.5">
         <p className="text-brand-muted text-[12px]">© 2026 Lara Croft. All rights reserved.</p>
         <div className="flex gap-5">
-          <a href="#" className="text-brand-muted text-[12px] hover:text-brand-text transition-colors">Privacy</a>
-          <a href="#" className="text-brand-muted text-[12px] hover:text-brand-text transition-colors">Terms</a>
-          <a href="#" className="text-brand-muted text-[12px] hover:text-brand-text transition-colors">Sitemap</a>
+          <Link to="/privacy" className="text-brand-muted text-[12px] hover:text-brand-text transition-colors">Privacy</Link>
+          <Link to="/terms" className="text-brand-muted text-[12px] hover:text-brand-text transition-colors">Terms</Link>
+          <Link to="/collection" className="text-brand-muted text-[12px] hover:text-brand-text transition-colors">Sitemap</Link>
         </div>
       </div>
     </footer>

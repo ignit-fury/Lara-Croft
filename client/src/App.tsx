@@ -11,6 +11,12 @@ import CollectionPage from './pages/Collection';
 import SalePage from './pages/Sale';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import Refund from './pages/Refund';
+import Returns from './pages/Returns';
+import Faq from './pages/Faq';
+import Shipping from './pages/Shipping';
 import Checkout from './pages/Checkout';
 import CheckoutSuccess from './pages/CheckoutSuccess';
 import Account from './pages/Account';
@@ -57,6 +63,12 @@ function App() {
           <Route path="/sale" element={<SalePage />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/refund-policy" element={<Refund />} />
+          <Route path="/returns" element={<Returns />} />
+          <Route path="/faq" element={<Faq />} />
+          <Route path="/shipping" element={<Shipping />} />
           <Route path="/product/:slug" element={<ProductDetail />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/wishlist" element={<Wishlist />} />
