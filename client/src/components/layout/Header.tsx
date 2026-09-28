@@ -21,13 +21,6 @@ export default function Header() {
 
   return (
     <>
-      {/* Announcement Bar */}
-      <div className="text-brand-cream text-center py-2 px-4 text-[13px] font-medium tracking-wide"
-        style={{ background: 'linear-gradient(90deg, #6f4423 0%, #8a5a30 50%, #6f4423 100%)', backgroundSize: '200% 100%', animation: 'shimmer 4s ease-in-out infinite' }}>
-        Free Shipping on Orders Over ₹5,000 &nbsp;·&nbsp; Use Code <strong>LARA25</strong> for 25% Off
-      </div>
-      <style>{`@keyframes shimmer { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }`}</style>
-
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-brand-border" style={{ background: 'rgba(255,255,255,.92)', backdropFilter: 'blur(14px)' }}>
         <div className="max-w-[1400px] mx-auto px-6 py-3.5 flex items-center justify-between gap-6">

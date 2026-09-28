@@ -9,6 +9,8 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const marqueeItems = ['Trending Now', 'Barrel Fit Black Jeans', 'Relax Fit Black Jeans', 'Bootcut Jeans Jet Black', 'Black Shaded Cargo Jeans', 'Carpenter Denim Jeans', 'Loose Fit Black Shaded Jeans', 'Wide Leg Pattern Black Jeans', 'Vintage Washed Black Jeans'];
+
   useEffect(() => {
     Promise.all([
       api.get('/products/featured'),
@@ -46,12 +48,12 @@ export default function Home() {
       {/* Marquee */}
       <div className="overflow-hidden border-y border-brand-border py-3.5" style={{ background: '#f5f5f5' }}>
         <div className="flex gap-12 whitespace-nowrap" style={{ animation: 'marqueeScroll 30s linear infinite' }}>
-          {['Trending Now', "Explorer's Linen Shirt", 'Tomb Raider Cargo Trousers', 'Relic Hunter Tee', 'Pasha Silk Shirt', 'Croft Classic Denim', 'Expedition Chinos', 'Nameless Adventurer Tee', 'Tiered Pocket Jeans'].map((item, i) => (
+          {marqueeItems.map((item, i) => (
             <span key={i} className="text-[13px] font-semibold uppercase tracking-[2px] text-brand-muted inline-flex items-center gap-12">
               {item} <span className="text-brand-accent">●</span>
             </span>
           ))}
-          {['Trending Now', "Explorer's Linen Shirt", 'Tomb Raider Cargo Trousers', 'Relic Hunter Tee', 'Pasha Silk Shirt', 'Croft Classic Denim', 'Expedition Chinos', 'Nameless Adventurer Tee', 'Tiered Pocket Jeans'].map((item, i) => (
+          {marqueeItems.map((item, i) => (
             <span key={`dup-${i}`} className="text-[13px] font-semibold uppercase tracking-[2px] text-brand-muted inline-flex items-center gap-12">
               {item} <span className="text-brand-accent">●</span>
             </span>
