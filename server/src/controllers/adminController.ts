@@ -165,6 +165,29 @@ export async function updateUserRole(req: AuthRequest, res: Response): Promise<v
   }
 }
 
+export async function deleteUser(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const id = req.params.id as string;
+    if (id === req.userId) {
+      res.status(403).json({ success: false, error: 'Cannot delete your own account' });
+      return;
+    }
+    const targetUser = await findById('users', id);
+    if (!targetUser) {
+      res.status(404).json({ success: false, error: 'User not found' });
+      return;
+    }
+    if (targetUser.role === 'super_admin' || targetUser.role === 'admin') {
+      res.status(403).json({ success: false, error: 'Cannot delete staff accounts' });
+      return;
+    }
+    await deleteOne('users', id);
+    res.json({ success: true, data: { message: 'User deleted' } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 export async function createProduct(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { originalPrice, categoryId, stockBySize, on_sale: _on_sale, onSale: _onSale, ...rest } = req.body;

@@ -7,6 +7,7 @@ import {
   updateOrderStatus,
   getUsers,
   updateUserRole,
+  deleteUser,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -25,6 +26,7 @@ router.get('/orders', getOrders);
 router.put('/orders/:id/status', validate(updateOrderStatusSchema), updateOrderStatus);
 router.get('/users', getUsers);
 router.put('/users/:id/role', validate(updateUserRoleSchema), updateUserRole);
+router.delete('/users/:id', deleteUser);
 router.post('/products', validate(createProductSchema), createProduct);
 router.put('/products/:id', validate(updateProductSchema), updateProduct);
 router.delete('/products/:id', deleteProduct);

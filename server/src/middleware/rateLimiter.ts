@@ -20,7 +20,7 @@ export const authLimiter = rateLimit({
 
 export const checkoutLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: isDev ? 10000 : 10,
+  max: isDev ? 10000 : 30,
   message: { success: false, error: 'Too many checkout attempts' },
   standardHeaders: true,
   legacyHeaders: false,
