@@ -37,6 +37,41 @@ export default function Returns() {
   const [details, setDetails] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [reference, setReference] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verifiedOrder, setVerifiedOrder] = useState<any | null>(null);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  const verifyOrder = async (): Promise<boolean> => {
+    if (!orderId.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return false;
+    setVerifying(true);
+    setVerifyError(null);
+    try {
+      const res = await api.post('/returns/verify-order', {
+        order_id: orderId.trim(),
+        email: email.trim(),
+      });
+      const data = res.data.data;
+      if (data.valid) {
+        setVerifiedOrder(data.order);
+        setVerifyError(null);
+        return true;
+      }
+      setVerifiedOrder(null);
+      setVerifyError(data.reason || 'Order could not be verified.');
+      return false;
+    } catch {
+      setVerifiedOrder(null);
+      setVerifyError('Could not verify order right now. Please try again.');
+      return false;
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const resetVerification = () => {
+    setVerifiedOrder(null);
+    setVerifyError(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +86,11 @@ export default function Returns() {
       toast.error('Please fix the highlighted fields.');
       return;
     }
+    const valid = verifiedOrder || (await verifyOrder());
+    if (!valid) {
+      toast.error(verifyError || 'Verify your Order ID first.');
+      return;
+    }
     try {
       const res = await api.post('/returns', {
         order_id: orderId.trim(),
@@ -62,8 +102,8 @@ export default function Returns() {
       const ref = `RET-${(res.data.data.id as string).slice(-8).toUpperCase()}`;
       setReference(ref);
       toast.success(`Request received — ${ref}`);
-    } catch {
-      toast.error('Could not submit request. Please try again or contact us.');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Could not submit request. Please try again or contact us.');
     }
   };
 
@@ -75,6 +115,7 @@ export default function Returns() {
     setDetails('');
     setErrors({});
     setReference(null);
+    resetVerification();
   };
 
   return (
@@ -135,11 +176,25 @@ export default function Returns() {
                 <input
                   id="returns-order"
                   value={orderId}
-                  onChange={(e) => setOrderId(e.target.value)}
-                  placeholder="e.g. ORD-123456"
+                  onChange={(e) => { setOrderId(e.target.value); resetVerification(); }}
+                  onBlur={() => { if (orderId.trim() && email.trim()) void verifyOrder(); }}
+                  placeholder="e.g. 2b096ebb or full Order ID"
                   className={inputClass}
                 />
                 {errors.orderId && <p className="text-red-600 text-[12px] mt-1">{errors.orderId}</p>}
+                {verifying && <p className="text-brand-muted text-[12px] mt-1">Verifying order…</p>}
+                {verifyError && <p className="text-red-600 text-[12px] mt-1">{verifyError}</p>}
+                {verifiedOrder && (
+                  <div className="mt-2 border border-brand-border bg-white px-4 py-3 text-[12px]" data-testid="returns-verified">
+                    <p className="font-bold text-brand-text mb-1">Order verified ✓</p>
+                    <p className="text-brand-muted">
+                      {(verifiedOrder.items || []).map((i: any) => `${i.name}${i.size ? ` (${i.size})` : ''} x${i.quantity}`).join(', ')}
+                    </p>
+                    <p className="text-brand-muted">
+                      Placed {verifiedOrder.createdAt ? new Date(verifiedOrder.createdAt).toLocaleDateString('en-IN') : ''} · {verifiedOrder.status}
+                    </p>
+                  </div>
+                )}
               </div>
               <div>
                 <label htmlFor="returns-email" className="block text-[12px] font-bold uppercase tracking-[1px] mb-2">
@@ -149,7 +204,8 @@ export default function Returns() {
                   id="returns-email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); resetVerification(); }}
+                  onBlur={() => { if (orderId.trim() && email.trim()) void verifyOrder(); }}
                   placeholder="you@example.com"
                   className={inputClass}
                 />

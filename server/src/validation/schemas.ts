@@ -119,6 +119,11 @@ export const updateReturnStatusSchema = z.object({
   status: z.enum(['pending', 'approved', 'rejected', 'completed']),
 });
 
+export const verifyReturnOrderSchema = z.object({
+  order_id: z.string().min(1).max(100),
+  email: z.string().email().max(200),
+});
+
 // ---------------------------------------------------------------------------
 // Legacy normalizers — TEMPORARY backward compat.
 // Accept old request shapes at the API boundary, convert to canonical.
