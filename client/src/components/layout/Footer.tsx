@@ -12,13 +12,6 @@ export default function Footer() {
           <p className="text-brand-muted text-[13px] max-w-[280px] leading-relaxed">
             Premium replica apparel inspired by the world's greatest explorer. Every stitch tells a story of adventure.
           </p>
-          <div className="flex gap-2.5 mt-5">
-            {['📷', '👍', '🐦', '▶'].map((icon, i) => (
-              <a key={i} href="#" className="w-[38px] h-[38px] bg-brand-card border border-brand-border flex items-center justify-center text-brand-muted text-[15px] rounded hover:bg-brand-accent hover:text-brand-cream hover:border-brand-accent transition-all">
-                {icon}
-              </a>
-            ))}
-          </div>
         </div>
 
         {/* Shop */}
