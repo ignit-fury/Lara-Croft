@@ -62,6 +62,7 @@ export default function AdminReturns() {
             <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Ref</th>
             <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Order</th>
             <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Email</th>
+            <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Acct</th>
             <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Type</th>
             <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Reason</th>
             <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Details</th>
@@ -71,12 +72,15 @@ export default function AdminReturns() {
         </thead>
         <tbody>
           {visible.length === 0 ? (
-            <tr><td colSpan={8} className="py-12 text-center text-brand-muted text-[13px]">No requests match this filter.</td></tr>
+            <tr><td colSpan={9} className="py-12 text-center text-brand-muted text-[13px]">No requests match this filter.</td></tr>
           ) : visible.map((r: any) => (
             <tr key={r.id} className="border-b border-black/8 hover:bg-black/5 align-top">
               <td className="py-3 px-5 font-[700]">RET-{r.id.slice(-8).toUpperCase()}</td>
               <td className="py-3 px-5">{r.orderId}</td>
               <td className="py-3 px-5">{r.email}</td>
+              <td className="py-3 px-5" title={r.userId || 'guest request'}>
+                {r.userId ? <span className="text-[13px] font-[700]" style={{ color: '#4c5a2e' }}>✓</span> : <span className="text-brand-muted text-[12px]">guest</span>}
+              </td>
               <td className="py-3 px-5">{r.type}</td>
               <td className="py-3 px-5">{r.reason}</td>
               <td className="py-3 px-5 text-brand-muted text-[12px] max-w-[260px]">{r.details}</td>

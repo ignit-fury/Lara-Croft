@@ -73,6 +73,10 @@ export default function Returns() {
     setVerifyError(null);
   };
 
+  const maybeVerify = () => {
+    if (orderId.trim() && email.trim()) void verifyOrder();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const next: Record<string, string> = {};
@@ -177,7 +181,7 @@ export default function Returns() {
                   id="returns-order"
                   value={orderId}
                   onChange={(e) => { setOrderId(e.target.value); resetVerification(); }}
-                  onBlur={() => { if (orderId.trim() && email.trim()) void verifyOrder(); }}
+                  onBlur={maybeVerify}
                   placeholder="e.g. 2b096ebb or full Order ID"
                   className={inputClass}
                 />
@@ -205,7 +209,7 @@ export default function Returns() {
                   type="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); resetVerification(); }}
-                  onBlur={() => { if (orderId.trim() && email.trim()) void verifyOrder(); }}
+                  onBlur={maybeVerify}
                   placeholder="you@example.com"
                   className={inputClass}
                 />

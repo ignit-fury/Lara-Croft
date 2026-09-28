@@ -1,35 +1,70 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { findMany, updateOne } from '../db/supabase-db';
+import { supabase, updateOne } from '../db/supabase-db';
 import { normalize } from '../db/normalize';
-import { supabase } from '../db/supabase-db';
+
+interface Eligibility {
+  order?: any;
+  reason?: string;
+}
+
+async function resolveOrder(input: string): Promise<any | null> {
+  const id = (input || '').trim();
+  if (!id) return null;
+  try {
+    const { data } = await supabase.from('orders').select('*').eq('id', id).maybeSingle();
+    if (data) return data;
+  } catch { /* fall through to suffix match */ }
+  // No ilike on the uuid column (Postgres has no ~~* for uuid) — filter in code.
+  if (id.length >= 4) {
+    const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(200);
+    const hits = (data || []).filter((o: any) => (o.id || '').toLowerCase().includes(id.toLowerCase()));
+    if (hits.length === 1) return hits[0];
+  }
+  return null;
+}
+
+/** Shared eligibility gate used by verify AND create (never trust the client alone). */
+async function checkEligibility(orderId: string, email: string, userId?: string): Promise<Eligibility> {
+  const order = await resolveOrder(orderId);
+  if (!order) return { reason: 'Order not found. Check the Order ID from your Account page.' };
+  if (order.payment_status !== 'paid') return { reason: 'Only paid orders can be returned.' };
+  if (!['confirmed', 'delivered'].includes(order.status)) {
+    return { reason: `This order is ${order.status} and is not eligible for return.` };
+  }
+  // Ownership: logged-in user must own it, otherwise email must match the buyer
+  if (userId) {
+    if (order.user_id !== userId) return { reason: 'This order belongs to a different account.' };
+  } else {
+    const { data: owner } = await supabase.from('users').select('email').eq('id', order.user_id).maybeSingle();
+    if (!owner || (owner.email || '').toLowerCase() !== (email || '').trim().toLowerCase()) {
+      return { reason: 'Order ID and email do not match our records.' };
+    }
+  }
+  const { data: existing } = await supabase
+    .from('return_requests')
+    .select('id,status')
+    .eq('order_id', order.id)
+    .in('status', ['pending', 'approved', 'completed'])
+    .limit(1);
+  if (existing && existing.length > 0) {
+    return { reason: `A return request for this order already exists (${existing[0].status}).` };
+  }
+  return { order };
+}
 
 export async function createReturnRequest(req: AuthRequest, res: Response): Promise<void> {
   try {
-    // Server-side guard: order must exist (allows full id or unique suffix)
-    const input = (req.body.order_id || '').trim();
-    let orderId = input;
-    try {
-      const { data } = await supabase.from('orders').select('id').eq('id', input).maybeSingle();
-      if (data) orderId = data.id;
-      else if (input.length >= 4) {
-        const m = await supabase.from('orders').select('id').order('created_at', { ascending: false }).limit(200);
-        const hits = (m.data || []).filter((o: any) => (o.id || '').toLowerCase().includes(input.toLowerCase()));
-        if (hits.length === 1) orderId = hits[0].id;
-        else {
-          res.status(400).json({ success: false, error: 'Order not found. Check the Order ID.' });
-          return;
-        }
-      }
-    } catch {
-      res.status(400).json({ success: false, error: 'Order not found. Check the Order ID.' });
+    const result = await checkEligibility(req.body.order_id, req.body.email, req.userId);
+    if (!result.order) {
+      res.status(400).json({ success: false, error: result.reason });
       return;
     }
     const { data, error } = await supabase
       .from('return_requests')
       .insert({
         user_id: req.userId || null,
-        order_id: orderId,
+        order_id: result.order.id,
         email: req.body.email,
         type: req.body.type,
         reason: req.body.reason,
@@ -47,50 +82,12 @@ export async function createReturnRequest(req: AuthRequest, res: Response): Prom
 
 export async function verifyReturnOrder(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const input = (req.body.order_id || '').trim();
-    const email = (req.body.email || '').trim().toLowerCase();
-
-    // Exact id first, then unique suffix match (users often paste short ids).
-    // NOTE: no ilike on the uuid column (Postgres has no ~~* for uuid) — filter in code.
-    let order = null;
-    try {
-      const { data } = await supabase.from('orders').select('*').eq('id', input).maybeSingle();
-      order = data;
-    } catch { /* fall through to suffix match */ }
-    if (!order && input.length >= 4) {
-      const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(200);
-      const hits = (data || []).filter((o: any) => (o.id || '').toLowerCase().includes(input.toLowerCase()));
-      if (hits.length === 1) order = hits[0];
-    }
-    if (!order) {
-      res.json({ success: true, data: { valid: false, reason: 'Order not found. Check the Order ID from your Account page.' } });
+    const result = await checkEligibility(req.body.order_id, req.body.email, req.userId);
+    if (!result.order) {
+      res.json({ success: true, data: { valid: false, reason: result.reason } });
       return;
     }
-    if (order.payment_status !== 'paid') {
-      res.json({ success: true, data: { valid: false, reason: 'Only paid orders can be returned.' } });
-      return;
-    }
-    if (!['confirmed', 'delivered'].includes(order.status)) {
-      res.json({ success: true, data: { valid: false, reason: `This order is ${order.status} and is not eligible for return.` } });
-      return;
-    }
-    // Ownership: the email must match the buyer's account email
-    const { data: owner } = await supabase.from('users').select('email').eq('id', order.user_id).maybeSingle();
-    if (!owner || (owner.email || '').toLowerCase() !== email) {
-      res.json({ success: true, data: { valid: false, reason: 'Order ID and email do not match our records.' } });
-      return;
-    }
-    // Already requested?
-    const { data: existing } = await supabase
-      .from('return_requests')
-      .select('id,status')
-      .eq('order_id', order.id)
-      .in('status', ['pending', 'approved', 'completed'])
-      .limit(1);
-    if (existing && existing.length > 0) {
-      res.json({ success: true, data: { valid: false, reason: `A return request for this order already exists (${existing[0].status}).` } });
-      return;
-    }
+    const order = result.order;
     res.json({
       success: true,
       data: {
@@ -135,16 +132,6 @@ export async function updateReturnStatus(req: AuthRequest, res: Response): Promi
       return;
     }
     res.json({ success: true, data: normalize(updated) });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-}
-
-export async function getMyReturnRequests(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    const rows = await findMany('return_requests', { user_id: req.userId! });
-    rows.sort((a: any, b: any) => (b.created_at || '').localeCompare(a.created_at || ''));
-    res.json({ success: true, data: normalize(rows) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
