@@ -19,6 +19,7 @@ import uploadRoutes from './routes/upload';
 import wishlistRoutes from './routes/wishlist';
 import reviewRoutes from './routes/reviews';
 import guestCheckoutRoutes from './routes/guestCheckout';
+import returnRoutes from './routes/returns';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -93,6 +94,7 @@ app.use('/api/orders/guest-checkout', checkoutLimiter);
 
 // Guest routes (no auth required)
 app.use('/api', guestCheckoutRoutes);
+app.use('/api/returns', returnRoutes);
 
 // API Routes
 app.use('/api/auth', authRoutes);

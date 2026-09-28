@@ -11,7 +11,8 @@ import {
   updateProduct,
   deleteProduct,
 } from '../controllers/adminController';
-import { createProductSchema, updateProductSchema, updateOrderStatusSchema, updateUserRoleSchema } from '../validation/schemas';
+import { createProductSchema, updateProductSchema, updateOrderStatusSchema, updateUserRoleSchema, updateReturnStatusSchema } from '../validation/schemas';
+import { getReturnRequests, updateReturnStatus } from '../controllers/returnController';
 import { supabase } from '../db/supabase-db';
 
 const router = Router();
@@ -27,6 +28,8 @@ router.put('/users/:id/role', validate(updateUserRoleSchema), updateUserRole);
 router.post('/products', validate(createProductSchema), createProduct);
 router.put('/products/:id', validate(updateProductSchema), updateProduct);
 router.delete('/products/:id', deleteProduct);
+router.get('/returns', getReturnRequests);
+router.put('/returns/:id/status', validate(updateReturnStatusSchema), updateReturnStatus);
 
 router.put('/categories/:id/size-guide', async (req, res) => {
   try {

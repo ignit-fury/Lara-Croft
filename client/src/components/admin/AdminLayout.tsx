@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { path: '/admin/orders', label: 'Orders', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
   { path: '/admin/products', label: 'Products', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
   { path: '/admin/users', label: 'Users', icon: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m5-5.13a4 4 0 100-8 4 4 0 000 8zm6 1a4 4 0 10-3-6.65' },
+  { path: '/admin/returns', label: 'Returns', icon: 'M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8m0-5v5h5' },
 ];
 
 const PAGE_LABELS: Record<string, string> = {
@@ -13,6 +14,7 @@ const PAGE_LABELS: Record<string, string> = {
   '/admin/orders': 'Orders',
   '/admin/products': 'Products',
   '/admin/users': 'Users',
+  '/admin/returns': 'Returns',
 };
 
 export default function AdminLayout() {

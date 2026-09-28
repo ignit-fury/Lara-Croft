@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import api from '../services/api';
 
 const policyPoints = [
   {
@@ -37,7 +38,7 @@ export default function Returns() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [reference, setReference] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const next: Record<string, string> = {};
     if (!orderId.trim()) next.orderId = 'Order ID is required.';
@@ -50,9 +51,20 @@ export default function Returns() {
       toast.error('Please fix the highlighted fields.');
       return;
     }
-    const ref = `RET-${Date.now()}`;
-    setReference(ref);
-    toast.success(`Request received — ${ref}`);
+    try {
+      const res = await api.post('/returns', {
+        order_id: orderId.trim(),
+        email: email.trim(),
+        type,
+        reason,
+        details: details.trim(),
+      });
+      const ref = `RET-${(res.data.data.id as string).slice(-8).toUpperCase()}`;
+      setReference(ref);
+      toast.success(`Request received — ${ref}`);
+    } catch {
+      toast.error('Could not submit request. Please try again or contact us.');
+    }
   };
 
   const resetForm = () => {

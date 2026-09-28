@@ -106,6 +106,19 @@ export const updateUserRoleSchema = z.object({
   role: z.enum(['customer', 'admin', 'manager', 'super_admin']),
 });
 
+// Returns — public request + admin status
+export const createReturnSchema = z.object({
+  order_id: z.string().min(1).max(100),
+  email: z.string().email().max(200),
+  type: z.enum(['Return', 'Exchange']),
+  reason: z.string().min(1).max(200),
+  details: z.string().min(1).max(2000),
+});
+
+export const updateReturnStatusSchema = z.object({
+  status: z.enum(['pending', 'approved', 'rejected', 'completed']),
+});
+
 // ---------------------------------------------------------------------------
 // Legacy normalizers — TEMPORARY backward compat.
 // Accept old request shapes at the API boundary, convert to canonical.
