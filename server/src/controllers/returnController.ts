@@ -82,10 +82,10 @@ export async function verifyReturnOrder(req: AuthRequest, res: Response): Promis
       .from('return_requests')
       .select('id,status')
       .eq('order_id', order.id)
-      .in('status', ['pending', 'approved'])
+      .in('status', ['pending', 'approved', 'completed'])
       .limit(1);
     if (existing && existing.length > 0) {
-      res.json({ success: true, data: { valid: false, reason: 'A return request is already open for this order.' } });
+      res.json({ success: true, data: { valid: false, reason: `A return request for this order already exists (${existing[0].status}).` } });
       return;
     }
     res.json({
