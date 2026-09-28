@@ -13,8 +13,9 @@ export async function createReturnRequest(req: AuthRequest, res: Response): Prom
       const { data } = await supabase.from('orders').select('id').eq('id', input).maybeSingle();
       if (data) orderId = data.id;
       else if (input.length >= 4) {
-        const m = await supabase.from('orders').select('id').ilike('id', `%${input}%`).limit(2);
-        if (m.data && m.data.length === 1) orderId = m.data[0].id;
+        const m = await supabase.from('orders').select('id').order('created_at', { ascending: false }).limit(200);
+        const hits = (m.data || []).filter((o: any) => (o.id || '').toLowerCase().includes(input.toLowerCase()));
+        if (hits.length === 1) orderId = hits[0].id;
         else {
           res.status(400).json({ success: false, error: 'Order not found. Check the Order ID.' });
           return;
@@ -49,15 +50,17 @@ export async function verifyReturnOrder(req: AuthRequest, res: Response): Promis
     const input = (req.body.order_id || '').trim();
     const email = (req.body.email || '').trim().toLowerCase();
 
-    // Exact id first, then unique suffix match (users often paste short ids)
+    // Exact id first, then unique suffix match (users often paste short ids).
+    // NOTE: no ilike on the uuid column (Postgres has no ~~* for uuid) — filter in code.
     let order = null;
     try {
       const { data } = await supabase.from('orders').select('*').eq('id', input).maybeSingle();
       order = data;
     } catch { /* fall through to suffix match */ }
     if (!order && input.length >= 4) {
-      const { data } = await supabase.from('orders').select('*').ilike('id', `%${input}%`).limit(2);
-      if (data && data.length === 1) order = data[0];
+      const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(200);
+      const hits = (data || []).filter((o: any) => (o.id || '').toLowerCase().includes(input.toLowerCase()));
+      if (hits.length === 1) order = hits[0];
     }
     if (!order) {
       res.json({ success: true, data: { valid: false, reason: 'Order not found. Check the Order ID from your Account page.' } });
