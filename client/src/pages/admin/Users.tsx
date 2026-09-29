@@ -7,15 +7,17 @@ import { Star } from 'lucide-react';
 export default function AdminUsers() {
   const { user } = useUserStore();
   const [users, setUsers] = useState<any[]>([]);
+  const [blocked, setBlocked] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const isSuperAdmin = user?.role === 'super_admin';
 
   useEffect(() => {
-    api.get('/admin/users').then((res) => {
-      setUsers(res.data.data);
+    Promise.all([api.get('/admin/users'), api.get('/admin/blocked-emails')]).then(([uRes, bRes]) => {
+      setUsers(uRes.data.data);
+      setBlocked(bRes.data.data);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   const handleDelete = async (userId: string) => {
@@ -41,6 +43,17 @@ export default function AdminUsers() {
       toast.success(`${target.name} is now ${role}`);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to update role');
+    }
+  };
+
+  const handleUnblock = async (email: string) => {
+    if (!window.confirm(`Allow ${email} to register again?`)) return;
+    try {
+      await api.delete(`/admin/blocked-emails/${encodeURIComponent(email)}`);
+      setBlocked(blocked.filter((b) => b.email !== email));
+      toast.success('Email unblocked');
+    } catch {
+      toast.error('Failed to unblock');
     }
   };
 
@@ -110,6 +123,23 @@ export default function AdminUsers() {
           ))}
         </tbody>
       </table>
+      {blocked.length > 0 && (
+        <div className="px-5 py-4 border-t border-brand-border">
+          <div className="text-[11px] font-bold uppercase tracking-[1px] text-brand-muted mb-2">
+            Blocked emails ({blocked.length}) — deleted users cannot re-register
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {blocked.map((b) => (
+              <span key={b.email} className="inline-flex items-center gap-2 bg-white border border-brand-border px-3 py-1.5 text-[12px]">
+                {b.email}
+                <button onClick={() => handleUnblock(b.email)} className="text-brand-accent font-[700] hover:underline cursor-pointer">
+                  Unblock
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

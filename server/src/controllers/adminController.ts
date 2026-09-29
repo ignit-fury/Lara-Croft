@@ -182,7 +182,41 @@ export async function deleteUser(req: AuthRequest, res: Response): Promise<void>
       return;
     }
     await deleteOne('users', id);
+    // Block the email so the next login/sync cannot resurrect the account
+    try {
+      await supabase.from('blocked_emails').upsert(
+        { email: (targetUser.email || '').toLowerCase() },
+        { onConflict: 'email' }
+      );
+    } catch (blockError: any) {
+      console.error('[ADMIN] Failed to block email after delete:', blockError.message);
+    }
     res.json({ success: true, data: { message: 'User deleted' } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+export async function getBlockedEmails(_req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { data, error } = await supabase
+      .from('blocked_emails')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    res.json({ success: true, data: normalize(data || []) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+export async function unblockEmail(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const email = decodeURIComponent(req.params.email as string).toLowerCase();
+    const { error } = await supabase.from('blocked_emails').delete().eq('email', email);
+    if (error) throw error;
+    res.json({ success: true, data: { message: 'Email unblocked' } });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

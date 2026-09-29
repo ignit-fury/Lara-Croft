@@ -13,6 +13,13 @@ export async function syncUser(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
+    // Deleted/blocked users must stay deleted — do not resurrect on sync
+    const blocked = await findOne('blocked_emails', { email: email.toLowerCase() });
+    if (blocked) {
+      res.status(403).json({ success: false, error: 'This account has been removed.' });
+      return;
+    }
+
     // Try finding by supabase_id first
     let user = await findOne('users', { supabase_id: supabaseId });
 

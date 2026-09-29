@@ -22,6 +22,12 @@ export async function customerSignup(req: Request, res: Response): Promise<void>
       return;
     }
 
+    const blocked = await findOne('blocked_emails', { email: email.toLowerCase() });
+    if (blocked) {
+      res.status(403).json({ success: false, error: 'This account has been removed.' });
+      return;
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await insertOne('users', {
       supabase_id: `customer-${Date.now()}`,

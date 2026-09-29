@@ -8,6 +8,8 @@ import {
   getUsers,
   updateUserRole,
   deleteUser,
+  getBlockedEmails,
+  unblockEmail,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -27,6 +29,8 @@ router.put('/orders/:id/status', validate(updateOrderStatusSchema), updateOrderS
 router.get('/users', getUsers);
 router.put('/users/:id/role', validate(updateUserRoleSchema), updateUserRole);
 router.delete('/users/:id', deleteUser);
+router.get('/blocked-emails', getBlockedEmails);
+router.delete('/blocked-emails/:email', unblockEmail);
 router.post('/products', validate(createProductSchema), createProduct);
 router.put('/products/:id', validate(updateProductSchema), updateProduct);
 router.delete('/products/:id', deleteProduct);
