@@ -18,6 +18,19 @@ export default function AdminUsers() {
     });
   }, []);
 
+  const handleDelete = async (userId: string) => {
+    const target = users.find((u) => u.id === userId);
+    if (!target) return;
+    if (!window.confirm(`Delete ${target.name} (${target.email})? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/admin/users/${userId}`);
+      setUsers(users.filter((u) => u.id !== userId));
+      toast.success('User deleted');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to delete user');
+    }
+  };
+
   const handleRoleChange = async (userId: string, role: string) => {
     const target = users.find((u) => u.id === userId);
     if (!target) return;
@@ -44,6 +57,7 @@ export default function AdminUsers() {
             <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Name</th>
             <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Email</th>
             <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Role</th>
+            <th className="text-left py-2.5 px-5 text-[11px] uppercase tracking-[1px] text-brand-muted font-[700]">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -80,6 +94,16 @@ export default function AdminUsers() {
                   >
                     {u.role}
                   </span>
+                )}
+              </td>
+              <td className="py-3 px-5">
+                {u.id !== user?.id && u.role !== 'super_admin' && u.role !== 'admin' && (
+                  <button
+                    onClick={() => handleDelete(u.id)}
+                    className="bg-transparent border border-brand-border text-brand-text px-3 py-1.5 text-[11px] font-[700] hover:bg-[#8a3f3f] hover:text-brand-cream hover:border-[#8a3f3f] transition-colors cursor-pointer"
+                  >
+                    Delete
+                  </button>
                 )}
               </td>
             </tr>
